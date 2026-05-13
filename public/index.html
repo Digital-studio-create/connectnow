@@ -1052,12 +1052,18 @@ socket.on('ice_candidate',async d=>{
 
 // ── WebRTC ─────────────────────────────────────────
 async function setupRTC(init){
-  const cfg={iceServers:[
+  // Fetch TURN+STUN servers from backend
+  let iceServers = [
     {urls:'stun:stun.l.google.com:19302'},
-    {urls:'stun:stun1.l.google.com:19302'},
-    {urls:'stun:stun2.l.google.com:19302'},
-    {urls:'stun:stun3.l.google.com:19302'}
-  ]};
+    {urls:'stun:stun1.l.google.com:19302'}
+  ];
+  try{
+    const r = await fetch('/api/ice-servers');
+    const d = await r.json();
+    if(d.iceServers) iceServers = d.iceServers;
+  }catch(e){ console.warn('Using fallback ICE servers'); }
+
+  const cfg = { iceServers };
   S.pc=new RTCPeerConnection(cfg);
 
   try{
