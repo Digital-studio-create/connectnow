@@ -1052,18 +1052,26 @@ socket.on('ice_candidate',async d=>{
 
 // ── WebRTC ─────────────────────────────────────────
 async function setupRTC(init){
-  // Fetch TURN+STUN servers from backend
+  // Fetch TURN+STUN servers from backend for cross-country video
   let iceServers = [
     {urls:'stun:stun.l.google.com:19302'},
-    {urls:'stun:stun1.l.google.com:19302'}
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
   ];
   try{
     const r = await fetch('/api/ice-servers');
     const d = await r.json();
-    if(d.iceServers) iceServers = d.iceServers;
+    if(d.iceServers && d.iceServers.length > 0) iceServers = d.iceServers;
   }catch(e){ console.warn('Using fallback ICE servers'); }
 
-  const cfg = { iceServers };
+  const cfg = {
+    iceServers,
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require'
+  };
   S.pc=new RTCPeerConnection(cfg);
 
   try{
