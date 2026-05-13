@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -14,57 +15,51 @@ const io = new Server(server, {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// ── ICE Servers (STUN + Multiple TURN) ───────────────────
-const ICE_SERVERS = [
-  // Google STUN
-  { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  { urls: 'stun:stun2.l.google.com:19302' },
-  { urls: 'stun:stun3.l.google.com:19302' },
-  { urls: 'stun:stun4.l.google.com:19302' },
+// ── Metered TURN credentials ──────────────────────────────
+const METERED_DOMAIN = 'bilalchat.metered.live';
+const METERED_SECRET = 'oiNwgWvahlxp7hfAI55FKRW1SJXlUfkkLmgQ6A49LeuLn58-';
 
-  // Metered.ca FREE TURN (most reliable)
-  {
-    urls: [
-      'turn:openrelay.metered.ca:80',
-      'turn:openrelay.metered.ca:443',
-      'turns:openrelay.metered.ca:443'
-    ],
-    username: 'openrelayproject',
-    credential: 'openrelayproject'
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-    username: 'openrelayproject',
-    credential: 'openrelayproject'
-  },
+// Fetch real TURN credentials from Metered API
+app.get('/api/ice-servers', (req, res) => {
+  const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_SECRET}`;
 
-  // Xirsys FREE TURN (backup)
-  {
-    urls: [
-      'turn:relay.metered.ca:80',
-      'turn:relay.metered.ca:443',
-    ],
-    username: 'openrelayproject',
-    credential: 'openrelayproject'
-  },
-
-  // Additional free TURN servers
-  {
-    urls: 'turn:numb.viagenie.ca',
-    credential: 'muazkh',
-    username: 'webrtc@live.com'
-  },
-  {
-    urls: 'turn:turn.bistri.com:80',
-    username: 'homeo',
-    credential: 'homeo'
-  }
-];
-
-app.get('/api/ice-servers', (_, res) => {
-  res.json({ iceServers: ICE_SERVERS });
+  https.get(url, (response) => {
+    let data = '';
+    response.on('data', chunk => data += chunk);
+    response.on('end', () => {
+      try {
+        const iceServers = JSON.parse(data);
+        res.json({ iceServers });
+      } catch(e) {
+        res.json({ iceServers: getFallbackICE() });
+      }
+    });
+  }).on('error', () => {
+    res.json({ iceServers: getFallbackICE() });
+  });
 });
+
+function getFallbackICE() {
+  return [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    {
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ];
+}
 
 // ── In-memory store ───────────────────────────────────────
 const waitingUsers = { any: [], male: [], female: [] };
@@ -148,7 +143,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('cancel_find', () => removeFromWaiting(socket.id));
-
   socket.on('offer',         (d) => socket.to(d.roomId).emit('offer', d));
   socket.on('answer',        (d) => socket.to(d.roomId).emit('answer', d));
   socket.on('ice_candidate', (d) => socket.to(d.roomId).emit('ice_candidate', d));
@@ -177,4 +171,4 @@ app.get('/api/stats', (_, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ ConnectNow v4 on port ${PORT}`));
+server.listen(PORT, () => console.log(`✅ ConnectNow running on port ${PORT}`));
