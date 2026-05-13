@@ -14,22 +14,22 @@ const io = new Server(server, {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// ── TURN/STUN config endpoint ─────────────────────────────
-// Free public TURN servers
+// ── ICE Servers (STUN + Multiple TURN) ───────────────────
 const ICE_SERVERS = [
+  // Google STUN
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
   { urls: 'stun:stun2.l.google.com:19302' },
   { urls: 'stun:stun3.l.google.com:19302' },
   { urls: 'stun:stun4.l.google.com:19302' },
-  // Free TURN servers
+
+  // Metered.ca FREE TURN (most reliable)
   {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject'
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443',
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443',
+      'turns:openrelay.metered.ca:443'
+    ],
     username: 'openrelayproject',
     credential: 'openrelayproject'
   },
@@ -38,15 +38,27 @@ const ICE_SERVERS = [
     username: 'openrelayproject',
     credential: 'openrelayproject'
   },
+
+  // Xirsys FREE TURN (backup)
   {
-    urls: 'turn:relay.metered.ca:80',
+    urls: [
+      'turn:relay.metered.ca:80',
+      'turn:relay.metered.ca:443',
+    ],
     username: 'openrelayproject',
     credential: 'openrelayproject'
   },
+
+  // Additional free TURN servers
   {
-    urls: 'turn:relay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject'
+    urls: 'turn:numb.viagenie.ca',
+    credential: 'muazkh',
+    username: 'webrtc@live.com'
+  },
+  {
+    urls: 'turn:turn.bistri.com:80',
+    username: 'homeo',
+    credential: 'homeo'
   }
 ];
 
@@ -137,15 +149,10 @@ io.on('connection', (socket) => {
 
   socket.on('cancel_find', () => removeFromWaiting(socket.id));
 
-  // WebRTC signaling
   socket.on('offer',         (d) => socket.to(d.roomId).emit('offer', d));
   socket.on('answer',        (d) => socket.to(d.roomId).emit('answer', d));
   socket.on('ice_candidate', (d) => socket.to(d.roomId).emit('ice_candidate', d));
-
-  // Chat message
-  socket.on('message', (d) => {
-    socket.to(d.roomId).emit('message', { text: d.text, from: socket.id });
-  });
+  socket.on('message',       (d) => socket.to(d.roomId).emit('message', { text: d.text, from: socket.id }));
 
   socket.on('next',       () => handleLeave(socket));
   socket.on('disconnect', () => handleLeave(socket));
@@ -164,11 +171,10 @@ io.on('connection', (socket) => {
   }
 });
 
-// ── Stats ─────────────────────────────────────────────────
 app.get('/api/stats', (_, res) => {
   const waiting = Object.values(waitingUsers).reduce((a, q) => a + q.length, 0);
   res.json({ online: userMeta.size, inChats: activeRooms.size * 2, waiting });
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ ConnectNow v3 running on port ${PORT}`));
+server.listen(PORT, () => console.log(`✅ ConnectNow v4 on port ${PORT}`));
