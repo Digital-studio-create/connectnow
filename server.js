@@ -1,6 +1,5 @@
 const express = require('express');
 const http = require('http');
-const https = require('https');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -15,51 +14,45 @@ const io = new Server(server, {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// ── Metered TURN credentials ──────────────────────────────
-const METERED_DOMAIN = 'bilalchat.metered.live';
-const METERED_SECRET = 'oiNwgWvahlxp7hfAI55FKRW1SJXlUfkkLmgQ6A49LeuLn58-';
-
-// Fetch real TURN credentials from Metered API
-app.get('/api/ice-servers', (req, res) => {
-  const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_SECRET}`;
-
-  https.get(url, (response) => {
-    let data = '';
-    response.on('data', chunk => data += chunk);
-    response.on('end', () => {
-      try {
-        const iceServers = JSON.parse(data);
-        res.json({ iceServers });
-      } catch(e) {
-        res.json({ iceServers: getFallbackICE() });
-      }
+// ── ICE Servers with working TURN ─────────────────────────
+app.get('/api/ice-servers', async (req, res) => {
+  try {
+    const domain = process.env.METERED_DOMAIN || 'bilalchat.metered.live';
+    const apiKey = process.env.METERED_API_KEY || 'oiNwgWvahlxp7hfAI55FKRW1SJXlUfkkLmgQ6A49LeuLn58-';
+    
+    const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
+    const response = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`);
+    const iceServers = await response.json();
+    
+    console.log('TURN servers fetched:', iceServers.length, 'servers');
+    res.json({ iceServers });
+  } catch(e) {
+    console.error('TURN fetch error:', e.message);
+    // Fallback TURN servers
+    res.json({
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        {
+          urls: [
+            'turn:openrelay.metered.ca:80',
+            'turn:openrelay.metered.ca:443',
+            'turn:openrelay.metered.ca:443?transport=tcp',
+            'turns:openrelay.metered.ca:443'
+          ],
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:relay1.expressturn.com:3478',
+          username: 'efRPDX8NHY8OJCXQXF',
+          credential: 'EobZHCLqXfGkOhPT'
+        }
+      ]
     });
-  }).on('error', () => {
-    res.json({ iceServers: getFallbackICE() });
-  });
+  }
 });
-
-function getFallbackICE() {
-  return [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    {
-      urls: 'turn:openrelay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    }
-  ];
-}
 
 // ── In-memory store ───────────────────────────────────────
 const waitingUsers = { any: [], male: [], female: [] };
@@ -86,9 +79,7 @@ function findMatch(seeker) {
   return idx !== -1 ? { queue, idx } : null;
 }
 
-// ── Socket events ─────────────────────────────────────────
 io.on('connection', (socket) => {
-
   socket.on('register', (data) => {
     userMeta.set(socket.id, {
       socketId: socket.id,
@@ -147,9 +138,8 @@ io.on('connection', (socket) => {
   socket.on('answer',        (d) => socket.to(d.roomId).emit('answer', d));
   socket.on('ice_candidate', (d) => socket.to(d.roomId).emit('ice_candidate', d));
   socket.on('message',       (d) => socket.to(d.roomId).emit('message', { text: d.text, from: socket.id }));
-
-  socket.on('next',       () => handleLeave(socket));
-  socket.on('disconnect', () => handleLeave(socket));
+  socket.on('next',          () => handleLeave(socket));
+  socket.on('disconnect',    () => handleLeave(socket));
 
   function handleLeave(sock) {
     removeFromWaiting(sock.id);
