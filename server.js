@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const { Server } = require('socket.io');
 const path = require('path');
 
@@ -14,47 +15,52 @@ const io = new Server(server, {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
-// ── ICE Servers with working TURN ─────────────────────────
+const METERED_DOMAIN = process.env.METERED_DOMAIN || 'bilalchat.metered.live';
+const METERED_KEY    = process.env.METERED_API_KEY || 'oiNwgWvahlxp7hfAI55FKRW1SJXlUfkkLmgQ6A49LeuLn58-';
+
+function httpsGet(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); }
+        catch(e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+function fallbackICE() {
+  return [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    {
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp',
+        'turns:openrelay.metered.ca:443'
+      ],
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    }
+  ];
+}
+
 app.get('/api/ice-servers', async (req, res) => {
   try {
-    const domain = process.env.METERED_DOMAIN || 'bilalchat.metered.live';
-    const apiKey = process.env.METERED_API_KEY || 'oiNwgWvahlxp7hfAI55FKRW1SJXlUfkkLmgQ6A49LeuLn58-';
-    
-    const fetch = (...args) => import('node-fetch').then(({default: f}) => f(...args));
-    const response = await fetch(`https://${domain}/api/v1/turn/credentials?apiKey=${apiKey}`);
-    const iceServers = await response.json();
-    
-    console.log('TURN servers fetched:', iceServers.length, 'servers');
+    const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_KEY}`;
+    const iceServers = await httpsGet(url);
+    console.log('TURN servers fetched:', iceServers.length);
     res.json({ iceServers });
   } catch(e) {
-    console.error('TURN fetch error:', e.message);
-    // Fallback TURN servers
-    res.json({
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        {
-          urls: [
-            'turn:openrelay.metered.ca:80',
-            'turn:openrelay.metered.ca:443',
-            'turn:openrelay.metered.ca:443?transport=tcp',
-            'turns:openrelay.metered.ca:443'
-          ],
-          username: 'openrelayproject',
-          credential: 'openrelayproject'
-        },
-        {
-          urls: 'turn:relay1.expressturn.com:3478',
-          username: 'efRPDX8NHY8OJCXQXF',
-          credential: 'EobZHCLqXfGkOhPT'
-        }
-      ]
-    });
+    console.error('TURN fetch failed:', e.message);
+    res.json({ iceServers: fallbackICE() });
   }
 });
 
-// ── In-memory store ───────────────────────────────────────
 const waitingUsers = { any: [], male: [], female: [] };
 const activeRooms  = new Map();
 const userMeta     = new Map();
@@ -69,12 +75,6 @@ function findMatch(seeker) {
   const queue = seeker.isPremium && seeker.genderFilter !== 'any'
     ? waitingUsers[seeker.genderFilter] || waitingUsers.any
     : waitingUsers.any;
-
-  if (seeker.isPremium && seeker.countryFilter && seeker.countryFilter !== 'any') {
-    const idx = queue.findIndex(u => u.socketId !== seeker.socketId && u.country === seeker.countryFilter);
-    if (idx !== -1) return { queue, idx };
-  }
-
   const idx = queue.findIndex(u => u.socketId !== seeker.socketId);
   return idx !== -1 ? { queue, idx } : null;
 }
@@ -91,7 +91,6 @@ io.on('connection', (socket) => {
       countryFilter: data.countryFilter || 'any',
       mode: data.mode || 'video',
     });
-    socket.emit('registered', { socketId: socket.id });
   });
 
   socket.on('find_stranger', (prefs) => {
@@ -100,33 +99,19 @@ io.on('connection', (socket) => {
     Object.assign(meta, prefs);
     meta.socketId = socket.id;
     removeFromWaiting(socket.id);
-
-    const queue = meta.isPremium && meta.genderFilter !== 'any'
-      ? waitingUsers[meta.genderFilter] || waitingUsers.any
-      : waitingUsers.any;
-
+    const queue = waitingUsers.any;
     const match = findMatch(meta);
-
     if (match) {
       const { queue: q, idx } = match;
       const stranger = q.splice(idx, 1)[0];
       removeFromWaiting(stranger.socketId);
-
       const roomId = Math.random().toString(36).substring(2, 10);
       activeRooms.set(roomId, { users: [socket.id, stranger.socketId] });
       socket.join(roomId);
       io.sockets.sockets.get(stranger.socketId)?.join(roomId);
-
-      const strangerMeta = userMeta.get(stranger.socketId) || {};
-
-      io.to(socket.id).emit('matched', {
-        roomId, isInitiator: true,
-        stranger: { name: strangerMeta.name, country: strangerMeta.country, gender: strangerMeta.gender }
-      });
-      io.to(stranger.socketId).emit('matched', {
-        roomId, isInitiator: false,
-        stranger: { name: meta.name, country: meta.country, gender: meta.gender }
-      });
+      const sm = userMeta.get(stranger.socketId) || {};
+      io.to(socket.id).emit('matched', { roomId, isInitiator: true, stranger: { name: sm.name, country: sm.country, gender: sm.gender } });
+      io.to(stranger.socketId).emit('matched', { roomId, isInitiator: false, stranger: { name: meta.name, country: meta.country, gender: meta.gender } });
     } else {
       queue.push(meta);
       socket.emit('waiting', { position: queue.length });
@@ -161,4 +146,4 @@ app.get('/api/stats', (_, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`✅ ConnectNow running on port ${PORT}`));
+server.listen(PORT, () => console.log('ConnectNow running on port ' + PORT));
