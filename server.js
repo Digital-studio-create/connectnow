@@ -25,24 +25,52 @@ function httpsGet(url) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); }
-        catch(e) { reject(e); }
+        catch(e) { reject(new Error('Parse error: ' + data)); }
       });
     }).on('error', reject);
   });
 }
 
-function fallbackICE() {
+// Working TURN servers — hardcoded as primary
+function getICEServers() {
   return [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
     { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
     {
-      urls: [
-        'turn:openrelay.metered.ca:80',
-        'turn:openrelay.metered.ca:443',
-        'turn:openrelay.metered.ca:443?transport=tcp',
-        'turns:openrelay.metered.ca:443'
-      ],
+      urls: 'turn:openrelay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turns:openrelay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:relay.metered.ca:80',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:relay.metered.ca:443',
+      username: 'openrelayproject',
+      credential: 'openrelayproject'
+    },
+    {
+      urls: 'turn:relay.metered.ca:443?transport=tcp',
       username: 'openrelayproject',
       credential: 'openrelayproject'
     }
@@ -50,17 +78,25 @@ function fallbackICE() {
 }
 
 app.get('/api/ice-servers', async (req, res) => {
+  // Try Metered API first
   try {
     const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_KEY}`;
-    const iceServers = await httpsGet(url);
-    console.log('TURN servers fetched:', iceServers.length);
-    res.json({ iceServers });
+    const result = await httpsGet(url);
+    if (Array.isArray(result) && result.length > 0) {
+      console.log('Metered TURN servers:', result.length);
+      res.json({ iceServers: result });
+      return;
+    }
   } catch(e) {
-    console.error('TURN fetch failed:', e.message);
-    res.json({ iceServers: fallbackICE() });
+    console.log('Metered failed, using openrelay:', e.message);
   }
+  // Use openrelay fallback
+  const servers = getICEServers();
+  console.log('Using openrelay TURN servers:', servers.length);
+  res.json({ iceServers: servers });
 });
 
+// ── In-memory store ───────────────────────────────────────
 const waitingUsers = { any: [], male: [], female: [] };
 const activeRooms  = new Map();
 const userMeta     = new Map();
@@ -72,9 +108,7 @@ function removeFromWaiting(socketId) {
 }
 
 function findMatch(seeker) {
-  const queue = seeker.isPremium && seeker.genderFilter !== 'any'
-    ? waitingUsers[seeker.genderFilter] || waitingUsers.any
-    : waitingUsers.any;
+  const queue = waitingUsers.any;
   const idx = queue.findIndex(u => u.socketId !== seeker.socketId);
   return idx !== -1 ? { queue, idx } : null;
 }
@@ -99,22 +133,31 @@ io.on('connection', (socket) => {
     Object.assign(meta, prefs);
     meta.socketId = socket.id;
     removeFromWaiting(socket.id);
-    const queue = waitingUsers.any;
+
     const match = findMatch(meta);
+
     if (match) {
       const { queue: q, idx } = match;
       const stranger = q.splice(idx, 1)[0];
       removeFromWaiting(stranger.socketId);
+
       const roomId = Math.random().toString(36).substring(2, 10);
       activeRooms.set(roomId, { users: [socket.id, stranger.socketId] });
       socket.join(roomId);
       io.sockets.sockets.get(stranger.socketId)?.join(roomId);
+
       const sm = userMeta.get(stranger.socketId) || {};
-      io.to(socket.id).emit('matched', { roomId, isInitiator: true, stranger: { name: sm.name, country: sm.country, gender: sm.gender } });
-      io.to(stranger.socketId).emit('matched', { roomId, isInitiator: false, stranger: { name: meta.name, country: meta.country, gender: meta.gender } });
+      io.to(socket.id).emit('matched', {
+        roomId, isInitiator: true,
+        stranger: { name: sm.name, country: sm.country, gender: sm.gender }
+      });
+      io.to(stranger.socketId).emit('matched', {
+        roomId, isInitiator: false,
+        stranger: { name: meta.name, country: meta.country, gender: meta.gender }
+      });
     } else {
-      queue.push(meta);
-      socket.emit('waiting', { position: queue.length });
+      waitingUsers.any.push(meta);
+      socket.emit('waiting', { position: waitingUsers.any.length });
     }
   });
 
