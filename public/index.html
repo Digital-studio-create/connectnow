@@ -1078,22 +1078,46 @@ async function setupRTC(init){
   }
 
   S.pc.ontrack=e=>{
+    console.log('ontrack fired', e.streams, e.track.kind);
     const rv=document.getElementById('remoteVideo');
-    if(!rv.srcObject){
+    if(e.streams && e.streams[0]){
       rv.srcObject=e.streams[0];
-      rv.style.display='block';
-      document.getElementById('vidPh').style.display='none';
-      toast('✅ Connected! Stranger visible');
+    } else {
+      if(!rv.srcObject) rv.srcObject = new MediaStream();
+      rv.srcObject.addTrack(e.track);
     }
+    rv.style.display='block';
+    document.getElementById('vidPh').style.display='none';
+    rv.play().catch(err=>console.log('play error:',err));
+    toast('✅ Video connected!');
   };
 
   S.pc.onicecandidate=e=>{
-    if(e.candidate)socket.emit('ice_candidate',{roomId:S.roomId,candidate:e.candidate});
+    if(e.candidate){
+      console.log('ICE candidate:', e.candidate.type);
+      socket.emit('ice_candidate',{roomId:S.roomId,candidate:e.candidate});
+    }
+  };
+
+  S.pc.onicegatheringstatechange=()=>{
+    console.log('ICE gathering:', S.pc.iceGatheringState);
+  };
+
+  S.pc.oniceconnectionstatechange=()=>{
+    console.log('ICE connection:', S.pc.iceConnectionState);
+    if(S.pc.iceConnectionState==='connected'||S.pc.iceConnectionState==='completed'){
+      toast('🟢 Video live!');
+    }
+    if(S.pc.iceConnectionState==='failed'){
+      toast('❌ Connection failed — try Next');
+      S.pc.restartIce();
+    }
   };
 
   S.pc.onconnectionstatechange=()=>{
-    if(S.pc?.connectionState==='connected')toast('🟢 Video live!');
-    if(S.pc?.connectionState==='failed')toast('❌ Connection failed — try Next');
+    console.log('Connection state:', S.pc.connectionState);
+    if(S.pc?.connectionState==='connected') toast('🟢 Connected!');
+    if(S.pc?.connectionState==='failed') toast('❌ Failed — try Next');
   };
 
   if(init){
