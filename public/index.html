@@ -1106,9 +1106,9 @@ async function setupRTC(init){
   // Get local media
   try{
     const constraints = S.mode==='audio'
-      ? {audio:{echoCancellation:true,noiseSuppression:true}, video:false}
-      : {audio:{echoCancellation:true,noiseSuppression:true},
-         video:{width:{ideal:640,max:1280}, height:{ideal:480,max:720}, frameRate:{ideal:25}, facingMode:'user'}};
+      ? {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}, video:false}
+      : {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100},
+         video:{width:{ideal:320,max:640}, height:{ideal:240,max:480}, frameRate:{ideal:15,max:20}, facingMode:'user'}};
     S.localStream = await navigator.mediaDevices.getUserMedia(constraints);
     if(S.mode==='video'){
       const lv = document.getElementById('localVideo');
@@ -1125,40 +1125,35 @@ async function setupRTC(init){
     console.error('getUserMedia error:', e.name, e.message);
   }
 
-  // Remote track handler
-  S.pc.ontrack = e => {
-    console.log('ontrack:', e.track.kind, 'readyState:', e.track.readyState);
-    const rv = document.getElementById('remoteVideo');
+  // Remote track handler - simplified and robust
+  const remoteStream = new MediaStream();
+  const rv = document.getElementById('remoteVideo');
+  rv.srcObject = remoteStream;
+  rv.autoplay = true;
+  rv.playsInline = true;
+  rv.muted = false;
 
-    if(e.streams && e.streams[0]){
-      rv.srcObject = e.streams[0];
-    } else {
-      if(!rv.srcObject) rv.srcObject = new MediaStream();
-      rv.srcObject.addTrack(e.track);
-    }
+  S.pc.ontrack = e => {
+    console.log('ontrack:', e.track.kind, 'state:', e.track.readyState);
+    remoteStream.addTrack(e.track);
 
     if(e.track.kind === 'video'){
       rv.style.display = 'block';
       document.getElementById('vidPh').style.display = 'none';
       document.getElementById('selfPh').style.display = 'none';
-
-      // Multiple play attempts
-      const playVideo = () => {
-        rv.play().then(()=>{
-          console.log('Video playing!');
-          toast('🟢 Video live!');
-        }).catch(err=>{
-          console.log('play retry:', err.name);
-          if(err.name === 'AbortError' || err.name === 'NotAllowedError'){
-            setTimeout(playVideo, 1000);
-          }
-        });
-      };
-
-      e.track.onunmute = playVideo;
-      if(e.track.readyState === 'live') playVideo();
-      setTimeout(playVideo, 1000);
+      toast('📹 Video stream received!');
     }
+
+    // Force play
+    rv.play().catch(()=>{
+      setTimeout(()=>rv.play().catch(()=>{}), 500);
+    });
+
+    e.track.onunmute = ()=>{
+      console.log('Track unmuted:', e.track.kind);
+      rv.play().catch(()=>{});
+      if(e.track.kind==='video') toast('🟢 Video live!');
+    };
   };
 
   // ICE candidate handler
@@ -1272,7 +1267,7 @@ function cleanupChat(){
   document.getElementById('cpanel').classList.remove('open');
   if(S.pc){S.pc.close();S.pc=null;}
   if(S.localStream){S.localStream.getTracks().forEach(t=>t.stop());S.localStream=null;}
-  const rv=document.getElementById('remoteVideo');rv.style.display='none';rv.srcObject=null;
+  const rv=document.getElementById('remoteVideo');rv.style.display='none';rv.srcObject=null;rv.load();
   const lv=document.getElementById('localVideo');lv.style.display='none';lv.srcObject=null;
   document.getElementById('selfPh').style.display='flex';
   document.getElementById('vidPh').style.display='flex';
