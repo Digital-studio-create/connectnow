@@ -232,7 +232,7 @@ button,input,select,textarea{font-family:inherit}
 .vpa{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;box-shadow:0 0 60px rgba(108,71,255,.4)}
 .vpt{color:var(--sub);font-size:14px;animation:blink 1.5s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-#localVideo{position:absolute;bottom:90px;right:12px;width:88px;height:118px;object-fit:cover;border-radius:14px;border:2px solid var(--acc);display:none;z-index:5;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+#localVideo{position:absolute;bottom:90px;right:12px;width:88px;height:118px;object-fit:cover;border-radius:14px;border:2px solid var(--acc);display:none;z-index:5;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,.6);transform:scaleX(-1)}
 .selfph{position:absolute;bottom:90px;right:12px;width:88px;height:118px;border-radius:14px;border:2px solid var(--acc);background:radial-gradient(#2a1f3d,#111);display:flex;align-items:center;justify-content:center;font-size:26px;z-index:5;cursor:pointer}
 
 .stroverlay{position:absolute;top:58px;left:12px;right:12px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;z-index:5}
@@ -1035,19 +1035,40 @@ socket.on('message',d=>{
 });
 
 socket.on('offer',async d=>{
-  if(!S.pc)await setupRTC(false);
-  await S.pc.setRemoteDescription(new RTCSessionDescription(d.offer));
-  const ans=await S.pc.createAnswer();
-  await S.pc.setLocalDescription(ans);
-  socket.emit('answer',{roomId:S.roomId,answer:ans});
+  try{
+    if(!S.pc) await setupRTC(false);
+    await S.pc.setRemoteDescription(new RTCSessionDescription(d.offer));
+    console.log('Remote desc set (offer)');
+    // Drain queued ICE candidates
+    if(S._iceQ && S._iceQ.length>0){
+      for(const c of S._iceQ){ try{await S.pc.addIceCandidate(new RTCIceCandidate(c));}catch(e){} }
+      S._iceQ=[];
+    }
+    const ans=await S.pc.createAnswer();
+    await S.pc.setLocalDescription(ans);
+    socket.emit('answer',{roomId:S.roomId,answer:ans});
+    console.log('Answer sent');
+  }catch(e){ console.error('Offer err:',e); }
 });
 
 socket.on('answer',async d=>{
-  if(S.pc)await S.pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+  try{
+    if(S.pc && S.pc.signalingState !== 'stable'){
+      await S.pc.setRemoteDescription(new RTCSessionDescription(d.answer));
+      console.log('Remote description set (answer)');
+    }
+  }catch(e){ console.error('Answer error:', e); }
 });
 
 socket.on('ice_candidate',async d=>{
-  try{if(S.pc)await S.pc.addIceCandidate(new RTCIceCandidate(d.candidate));}catch(e){}
+  try{
+    if(S.pc && S.pc.remoteDescription && d.candidate){
+      await S.pc.addIceCandidate(new RTCIceCandidate(d.candidate));
+    } else if(d.candidate){
+      if(!S._iceQ) S._iceQ=[];
+      S._iceQ.push(d.candidate);
+    }
+  }catch(e){ console.log('ICE err:',e.message); }
 });
 
 // ── WebRTC ─────────────────────────────────────────
@@ -1085,8 +1106,9 @@ async function setupRTC(init){
   // Get local media
   try{
     const constraints = S.mode==='audio'
-      ? {audio:true, video:false}
-      : {audio:true, video:{width:{ideal:640}, height:{ideal:480}, facingMode:'user'}};
+      ? {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}, video:false}
+      : {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}, 
+         video:{width:{ideal:640,max:1280}, height:{ideal:480,max:720}, frameRate:{ideal:25,max:30}, facingMode:'user'}};
     S.localStream = await navigator.mediaDevices.getUserMedia(constraints);
     if(S.mode==='video'){
       const lv = document.getElementById('localVideo');
@@ -1175,10 +1197,13 @@ async function setupRTC(init){
   // Create and send offer if initiator
   if(init){
     try{
-      const offer = await S.pc.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: S.mode !== 'audio'
-      });
+      // Add transceivers for better compatibility
+      if(S.mode !== 'audio'){
+        S.pc.addTransceiver('video', {direction:'sendrecv'});
+      }
+      S.pc.addTransceiver('audio', {direction:'sendrecv'});
+      
+      const offer = await S.pc.createOffer();
       await S.pc.setLocalDescription(offer);
       socket.emit('offer', {roomId: S.roomId, offer});
       console.log('Offer sent');
