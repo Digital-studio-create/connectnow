@@ -1073,12 +1073,10 @@ socket.on('ice_candidate',async d=>{
 
 // ── WebRTC ─────────────────────────────────────────
 async function setupRTC(init){
-  // Fetch TURN servers from backend
+  // Get ICE servers from backend
   let iceServers = [
     {urls:'stun:stun.l.google.com:19302'},
     {urls:'stun:stun1.l.google.com:19302'},
-    {urls:'stun:stun2.l.google.com:19302'},
-    {urls:'stun:stun3.l.google.com:19302'},
     {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
     {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
     {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
@@ -1095,20 +1093,22 @@ async function setupRTC(init){
 
   const cfg = {
     iceServers,
+    iceTransportPolicy: 'all',
     iceCandidatePoolSize: 10,
     bundlePolicy: 'max-bundle',
     rtcpMuxPolicy: 'require'
   };
 
   S.pc = new RTCPeerConnection(cfg);
-  console.log('RTCPeerConnection created');
+  S._iceQ = [];
+  console.log('RTCPeerConnection created with', iceServers.length, 'ICE servers');
 
   // Get local media
   try{
     const constraints = S.mode==='audio'
-      ? {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}, video:false}
-      : {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}, 
-         video:{width:{ideal:640,max:1280}, height:{ideal:480,max:720}, frameRate:{ideal:25,max:30}, facingMode:'user'}};
+      ? {audio:{echoCancellation:true,noiseSuppression:true}, video:false}
+      : {audio:{echoCancellation:true,noiseSuppression:true},
+         video:{width:{ideal:640,max:1280}, height:{ideal:480,max:720}, frameRate:{ideal:25}, facingMode:'user'}};
     S.localStream = await navigator.mediaDevices.getUserMedia(constraints);
     if(S.mode==='video'){
       const lv = document.getElementById('localVideo');
@@ -1118,23 +1118,20 @@ async function setupRTC(init){
     }
     S.localStream.getTracks().forEach(t => {
       S.pc.addTrack(t, S.localStream);
-      console.log('Added track:', t.kind);
+      console.log('Added local track:', t.kind);
     });
   }catch(e){
     toast('⚠️ Camera/mic permission needed!');
-    console.error('getUserMedia error:', e);
+    console.error('getUserMedia error:', e.name, e.message);
   }
 
-  // Remote video handler
+  // Remote track handler
   S.pc.ontrack = e => {
-    console.log('ontrack:', e.track.kind, 'streams:', e.streams.length);
+    console.log('ontrack:', e.track.kind, 'readyState:', e.track.readyState);
     const rv = document.getElementById('remoteVideo');
 
     if(e.streams && e.streams[0]){
-      if(rv.srcObject !== e.streams[0]){
-        rv.srcObject = e.streams[0];
-        console.log('Set remote srcObject');
-      }
+      rv.srcObject = e.streams[0];
     } else {
       if(!rv.srcObject) rv.srcObject = new MediaStream();
       rv.srcObject.addTrack(e.track);
@@ -1145,70 +1142,80 @@ async function setupRTC(init){
       document.getElementById('vidPh').style.display = 'none';
       document.getElementById('selfPh').style.display = 'none';
 
-      e.track.onunmute = () => {
-        console.log('Video track unmuted - playing');
-        rv.play().catch(err => {
-          console.log('play err:', err.name);
-          if(err.name === 'AbortError'){
-            setTimeout(() => rv.play().catch(() => {}), 1000);
+      // Multiple play attempts
+      const playVideo = () => {
+        rv.play().then(()=>{
+          console.log('Video playing!');
+          toast('🟢 Video live!');
+        }).catch(err=>{
+          console.log('play retry:', err.name);
+          if(err.name === 'AbortError' || err.name === 'NotAllowedError'){
+            setTimeout(playVideo, 1000);
           }
         });
       };
 
-      // Also try playing directly
-      setTimeout(() => {
-        if(rv.srcObject) rv.play().catch(() => {});
-      }, 500);
+      e.track.onunmute = playVideo;
+      if(e.track.readyState === 'live') playVideo();
+      setTimeout(playVideo, 1000);
     }
   };
 
-  // ICE candidates
+  // ICE candidate handler
   S.pc.onicecandidate = e => {
     if(e.candidate){
-      console.log('ICE candidate:', e.candidate.type, e.candidate.protocol);
+      console.log('ICE candidate type:', e.candidate.type, 'protocol:', e.candidate.protocol);
       socket.emit('ice_candidate', {roomId: S.roomId, candidate: e.candidate});
     } else {
       console.log('ICE gathering complete');
     }
   };
 
+  S.pc.onicegatheringstatechange = () => {
+    console.log('ICE gathering state:', S.pc.iceGatheringState);
+  };
+
   S.pc.oniceconnectionstatechange = () => {
     const st = S.pc.iceConnectionState;
-    console.log('ICE state:', st);
+    console.log('ICE connection state:', st);
     if(st === 'connected' || st === 'completed'){
       toast('🟢 Connected!');
-      // Try playing remote video
       const rv = document.getElementById('remoteVideo');
-      if(rv.srcObject) rv.play().catch(() => {});
+      if(rv.srcObject) rv.play().catch(()=>{});
     }
     if(st === 'failed'){
-      toast('❌ Connection failed — try Next');
-      try{ S.pc.restartIce(); }catch(e){}
+      toast('❌ Connection failed — tap Next');
+      try{ S.pc.restartIce(); console.log('ICE restart attempted'); }catch(e){}
     }
     if(st === 'disconnected'){
-      toast('⚠️ Connection unstable...');
+      toast('⚠️ Reconnecting...');
+      setTimeout(()=>{
+        if(S.pc && S.pc.iceConnectionState === 'disconnected'){
+          try{ S.pc.restartIce(); }catch(e){}
+        }
+      }, 3000);
     }
   };
 
   S.pc.onconnectionstatechange = () => {
     console.log('Connection state:', S.pc.connectionState);
+    if(S.pc.connectionState === 'failed'){
+      toast('❌ Connection failed');
+    }
   };
 
-  // Create and send offer if initiator
+  // Create offer if initiator
   if(init){
     try{
-      // Add transceivers for better compatibility
-      if(S.mode !== 'audio'){
-        S.pc.addTransceiver('video', {direction:'sendrecv'});
-      }
-      S.pc.addTransceiver('audio', {direction:'sendrecv'});
-      
-      const offer = await S.pc.createOffer();
+      const offer = await S.pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: S.mode !== 'audio'
+      });
       await S.pc.setLocalDescription(offer);
       socket.emit('offer', {roomId: S.roomId, offer});
       console.log('Offer sent');
     }catch(e){
-      console.error('Offer error:', e);
+      console.error('Offer creation error:', e);
     }
   }
 
