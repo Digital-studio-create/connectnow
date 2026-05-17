@@ -1078,18 +1078,26 @@ async function setupRTC(init){
   }
 
   S.pc.ontrack=e=>{
-    console.log('ontrack fired', e.streams, e.track.kind);
+    console.log('ontrack fired', e.track.kind);
     const rv=document.getElementById('remoteVideo');
-    if(e.streams && e.streams[0]){
-      rv.srcObject=e.streams[0];
-    } else {
-      if(!rv.srcObject) rv.srcObject = new MediaStream();
+    if(!rv.srcObject){
+      rv.srcObject = e.streams && e.streams[0] ? e.streams[0] : new MediaStream();
+    } else if(e.streams && e.streams[0] && rv.srcObject !== e.streams[0]){
+      rv.srcObject = e.streams[0];
+    } else if(!e.streams || !e.streams[0]){
       rv.srcObject.addTrack(e.track);
     }
-    rv.style.display='block';
-    document.getElementById('vidPh').style.display='none';
-    rv.play().catch(err=>console.log('play error:',err));
-    toast('✅ Video connected!');
+    if(e.track.kind === 'video'){
+      rv.style.display='block';
+      document.getElementById('vidPh').style.display='none';
+      document.getElementById('selfPh').style.display='none';
+      const tryPlay = () => rv.play().catch(err=>{
+        console.log('Retrying play...');
+        setTimeout(()=>rv.play().catch(()=>{}), 300);
+      });
+      if(rv.readyState >= 2){ tryPlay(); }
+      else { rv.onloadedmetadata = tryPlay; }
+    }
   };
 
   S.pc.onicecandidate=e=>{
@@ -1164,7 +1172,14 @@ function nextStranger(){toast('🔀 Finding next...');cleanupChat();setTimeout(f
 function endChat(){cleanupChat();go('homeScreen');toast('Chat ended');}
 
 function cleanupChat(){
-  socket.emit('next');stopTimer();
+  socket.emit('next');
+  // Re-register user so they appear online again
+  if(S.user){
+    setTimeout(()=>{
+      socket.emit('register',{name:S.user.name,gender:S.user.gender,country:S.user.country,isPremium:S.isPremium,mode:S.mode});
+    }, 300);
+  }
+  stopTimer();
   S.panelOpen=false;
   document.getElementById('cpanel').classList.add('closed');
   document.getElementById('cpanel').classList.remove('open');
