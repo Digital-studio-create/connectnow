@@ -1052,88 +1052,143 @@ socket.on('ice_candidate',async d=>{
 
 // ── WebRTC ─────────────────────────────────────────
 async function setupRTC(init){
-  const cfg={iceServers:[
+  // Fetch TURN servers from backend
+  let iceServers = [
     {urls:'stun:stun.l.google.com:19302'},
     {urls:'stun:stun1.l.google.com:19302'},
     {urls:'stun:stun2.l.google.com:19302'},
-    {urls:'stun:stun3.l.google.com:19302'}
-  ]};
-  S.pc=new RTCPeerConnection(cfg);
-
+    {urls:'stun:stun3.l.google.com:19302'},
+    {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turns:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
+  ];
   try{
-    const c=S.mode==='audio'
-      ?{audio:true,video:false}
-      :{audio:true,video:{width:{ideal:1280},height:{ideal:720},facingMode:'user'}};
-    S.localStream=await navigator.mediaDevices.getUserMedia(c);
-    if(S.mode==='video'){
-      const lv=document.getElementById('localVideo');
-      lv.srcObject=S.localStream;lv.style.display='block';
-      document.getElementById('selfPh').style.display='none';
+    const r = await fetch('/api/ice-servers');
+    const d = await r.json();
+    if(d.iceServers && d.iceServers.length > 0){
+      iceServers = d.iceServers;
+      console.log('Using server ICE:', iceServers.length, 'servers');
     }
-    S.localStream.getTracks().forEach(t=>S.pc.addTrack(t,S.localStream));
-    toast('🎥 Camera & mic ready');
+  }catch(e){ console.log('Using fallback ICE'); }
+
+  const cfg = {
+    iceServers,
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require'
+  };
+
+  S.pc = new RTCPeerConnection(cfg);
+  console.log('RTCPeerConnection created');
+
+  // Get local media
+  try{
+    const constraints = S.mode==='audio'
+      ? {audio:true, video:false}
+      : {audio:true, video:{width:{ideal:640}, height:{ideal:480}, facingMode:'user'}};
+    S.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    if(S.mode==='video'){
+      const lv = document.getElementById('localVideo');
+      lv.srcObject = S.localStream;
+      lv.style.display = 'block';
+      document.getElementById('selfPh').style.display = 'none';
+    }
+    S.localStream.getTracks().forEach(t => {
+      S.pc.addTrack(t, S.localStream);
+      console.log('Added track:', t.kind);
+    });
   }catch(e){
-    toast('⚠️ Allow camera/mic permission!');
-    console.error(e);
+    toast('⚠️ Camera/mic permission needed!');
+    console.error('getUserMedia error:', e);
   }
 
-  S.pc.ontrack=e=>{
-    console.log('ontrack fired', e.track.kind);
-    const rv=document.getElementById('remoteVideo');
-    if(!rv.srcObject){
-      rv.srcObject = e.streams && e.streams[0] ? e.streams[0] : new MediaStream();
-    } else if(e.streams && e.streams[0] && rv.srcObject !== e.streams[0]){
-      rv.srcObject = e.streams[0];
-    } else if(!e.streams || !e.streams[0]){
+  // Remote video handler
+  S.pc.ontrack = e => {
+    console.log('ontrack:', e.track.kind, 'streams:', e.streams.length);
+    const rv = document.getElementById('remoteVideo');
+
+    if(e.streams && e.streams[0]){
+      if(rv.srcObject !== e.streams[0]){
+        rv.srcObject = e.streams[0];
+        console.log('Set remote srcObject');
+      }
+    } else {
+      if(!rv.srcObject) rv.srcObject = new MediaStream();
       rv.srcObject.addTrack(e.track);
     }
+
     if(e.track.kind === 'video'){
-      rv.style.display='block';
-      document.getElementById('vidPh').style.display='none';
-      document.getElementById('selfPh').style.display='none';
-      const tryPlay = () => rv.play().catch(err=>{
-        console.log('Retrying play...');
-        setTimeout(()=>rv.play().catch(()=>{}), 300);
-      });
-      if(rv.readyState >= 2){ tryPlay(); }
-      else { rv.onloadedmetadata = tryPlay; }
+      rv.style.display = 'block';
+      document.getElementById('vidPh').style.display = 'none';
+      document.getElementById('selfPh').style.display = 'none';
+
+      e.track.onunmute = () => {
+        console.log('Video track unmuted - playing');
+        rv.play().catch(err => {
+          console.log('play err:', err.name);
+          if(err.name === 'AbortError'){
+            setTimeout(() => rv.play().catch(() => {}), 1000);
+          }
+        });
+      };
+
+      // Also try playing directly
+      setTimeout(() => {
+        if(rv.srcObject) rv.play().catch(() => {});
+      }, 500);
     }
   };
 
-  S.pc.onicecandidate=e=>{
+  // ICE candidates
+  S.pc.onicecandidate = e => {
     if(e.candidate){
-      console.log('ICE candidate:', e.candidate.type);
-      socket.emit('ice_candidate',{roomId:S.roomId,candidate:e.candidate});
+      console.log('ICE candidate:', e.candidate.type, e.candidate.protocol);
+      socket.emit('ice_candidate', {roomId: S.roomId, candidate: e.candidate});
+    } else {
+      console.log('ICE gathering complete');
     }
   };
 
-  S.pc.onicegatheringstatechange=()=>{
-    console.log('ICE gathering:', S.pc.iceGatheringState);
-  };
-
-  S.pc.oniceconnectionstatechange=()=>{
-    console.log('ICE connection:', S.pc.iceConnectionState);
-    if(S.pc.iceConnectionState==='connected'||S.pc.iceConnectionState==='completed'){
-      toast('🟢 Video live!');
+  S.pc.oniceconnectionstatechange = () => {
+    const st = S.pc.iceConnectionState;
+    console.log('ICE state:', st);
+    if(st === 'connected' || st === 'completed'){
+      toast('🟢 Connected!');
+      // Try playing remote video
+      const rv = document.getElementById('remoteVideo');
+      if(rv.srcObject) rv.play().catch(() => {});
     }
-    if(S.pc.iceConnectionState==='failed'){
+    if(st === 'failed'){
       toast('❌ Connection failed — try Next');
-      S.pc.restartIce();
+      try{ S.pc.restartIce(); }catch(e){}
+    }
+    if(st === 'disconnected'){
+      toast('⚠️ Connection unstable...');
     }
   };
 
-  S.pc.onconnectionstatechange=()=>{
+  S.pc.onconnectionstatechange = () => {
     console.log('Connection state:', S.pc.connectionState);
-    if(S.pc?.connectionState==='connected') toast('🟢 Connected!');
-    if(S.pc?.connectionState==='failed') toast('❌ Failed — try Next');
   };
 
+  // Create and send offer if initiator
   if(init){
-    const offer=await S.pc.createOffer();
-    await S.pc.setLocalDescription(offer);
-    socket.emit('offer',{roomId:S.roomId,offer});
+    try{
+      const offer = await S.pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: S.mode !== 'audio'
+      });
+      await S.pc.setLocalDescription(offer);
+      socket.emit('offer', {roomId: S.roomId, offer});
+      console.log('Offer sent');
+    }catch(e){
+      console.error('Offer error:', e);
+    }
   }
+
 }
+
 
 // ── Controls ───────────────────────────────────────
 function toggleMute(){
