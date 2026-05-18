@@ -1159,23 +1159,35 @@ socket.on('ice_candidate',async d=>{
 
 // ── WebRTC ─────────────────────────────────────────
 async function setupRTC(init){
-  // Get ICE servers from backend
+  // Humne aapka naya Metered.ca server aur Google STUN server yahan set kar diya hai
   let iceServers = [
     {urls:'stun:stun.l.google.com:19302'},
     {urls:'stun:stun1.l.google.com:19302'},
-    {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
-    {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
-    {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
-    {urls:'turns:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
-  ];
-  try{
-    const r = await fetch('/api/ice-servers');
-    const d = await r.json();
-    if(d.iceServers && d.iceServers.length > 0){
-      iceServers = d.iceServers;
-      console.log('Using server ICE:', iceServers.length, 'servers');
+    {urls:'stun:stun2.l.google.com:19302'},
+    {
+      urls: 'turn:global.metered.ca:80',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    },
+    {
+      urls: 'turn:global.metered.ca:443',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    },
+    {
+      urls: 'turn:global.metered.ca:443?transport=tcp',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    },
+    {
+      urls: 'turns:global.metered.ca:443',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
     }
-  }catch(e){ console.log('Using fallback ICE'); }
+  ];
+
+  // Backend API fetch ko bypass kar rahe hain taake agar Render dynamic servers na bhi de, tab bhi call connect ho jaye
+  console.log('Using hardcoded secure Metered ICE servers');
 
   const cfg = {
     iceServers,
@@ -1609,22 +1621,34 @@ function startPrivateChat(name){
   document.getElementById('pcConnTxt').textContent = 'Calling ' + name + '...';
 }
 
-function endPrivateCall(){
-  if(pcPc){ pcPc.close(); pcPc = null; }
-  if(pcStream){ pcStream.getTracks().forEach(t=>t.stop()); pcStream = null; }
-  const rv = document.getElementById('pcRemoteVideo');
-  rv.srcObject = null; rv.style.display = 'none';
-  const lv = document.getElementById('pcLocalVideo');
-  lv.srcObject = null; lv.style.display = 'none';
-  document.getElementById('pcVidPh').style.display = 'flex';
-  go('friendsScreen');
-  loadFriends();
-}
-
 async function setupPrivateCall(init, roomId){
   pcRoomId = roomId;
-  const iceResp = await fetch('/api/ice-servers');
-  const {iceServers} = await iceResp.json();
+  
+  // Private call ke liye bhi aapka secure Metered server set kar diya hai
+  let iceServers = [
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {
+      urls: 'turn:global.metered.ca:80',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    },
+    {
+      urls: 'turn:global.metered.ca:443',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    },
+    {
+      urls: 'turn:global.metered.ca:443?transport=tcp',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    },
+    {
+      urls: 'turns:global.metered.ca:443',
+      username: '33ca12a7bf24151fb87d4983',
+      credential: 'tV3iNqX1jC8wP5s4'
+    }
+  ];
   
   pcPc = new RTCPeerConnection({iceServers, iceCandidatePoolSize:10});
   
@@ -1656,6 +1680,18 @@ async function setupPrivateCall(init, roomId){
   pcPc.onicecandidate = e => {
     if(e.candidate) socket.emit('pc_ice', {roomId:pcRoomId, candidate:e.candidate});
   };
+  
+  pcPc.oniceconnectionstatechange = ()=>{
+    if(pcPc.iceConnectionState==='connected') toast('🟢 Connected!');
+    if(pcPc.iceConnectionState==='failed') toast('❌ Call failed');
+  };
+  
+  if(init){
+    const offer = await pcPc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+    await pcPc.setLocalDescription(offer);
+    socket.emit('pc_offer', {roomId:pcRoomId, offer});
+  }
+}
   
   pcPc.oniceconnectionstatechange = ()=>{
     if(pcPc.iceConnectionState==='connected') toast('🟢 Connected!');
