@@ -242,7 +242,8 @@ button,input,select,textarea{font-family:inherit}
 .repbtn{background:rgba(255,79,123,.15);border:1px solid rgba(255,79,123,.35);color:var(--acc3);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;pointer-events:all;cursor:pointer;transition:all .2s}
 .repbtn:hover{background:rgba(255,79,123,.35)}
 
-.ctrlbar{position:absolute;bottom:0;left:0;right:0;padding:12px 18px;background:linear-gradient(to top,rgba(0,0,0,.95),transparent);display:flex;align-items:center;justify-content:center;gap:12px;z-index:5}
+.ctrlbar{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(to top,rgba(0,0,0,.9),transparent);display:flex;align-items:center;justify-content:center;gap:8px;z-index:5;flex-wrap:wrap}
+.ctrlbar-right{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:6}
 .cb{width:50px;height:50px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(0,0,0,.4);flex-shrink:0;color:#fff}
 .cb-mute{background:rgba(255,255,255,.12);backdrop-filter:blur(8px)}
 .cb-mute.on{background:var(--acc3)}
@@ -521,9 +522,75 @@ button,input,select,textarea{font-family:inherit}
 
   <div class="bnav">
     <div class="ni on"><div class="nic">🏠</div>Home</div>
-    <div class="ni" onclick="toast('Coming soon!')"><div class="nic">👥</div>Friends</div>
+    <div class="ni" onclick="showFriendsSection()"><div class="nic">👥</div>Friends</div>
     <div class="ni" onclick="openProf()"><div class="nic">👤</div>Profile</div>
     <div class="ni" onclick="showPrem()"><div class="nic">⭐</div>Premium</div>
+  </div>
+</div>
+
+<!-- FRIENDS SCREEN -->
+<div class="sc off" id="friendsScreen">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="ib" onclick="go('homeScreen')" style="font-size:13px">←</div>
+      <div class="unm">👥 My Friends</div>
+    </div>
+    <div style="font-size:12px;color:var(--sub)" id="friendCount">0 friends</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;padding:16px" id="friendsList">
+    <div style="text-align:center;padding:40px 20px;color:var(--sub)" id="noFriendsMsg">
+      <div style="font-size:48px;margin-bottom:12px">👥</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">No friends yet!</div>
+      <div style="font-size:13px">Find strangers and send friend requests during video calls</div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIVATE CHAT SCREEN -->
+<div class="sc off" id="privateChatScreen">
+  <div class="tctop">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="ib" onclick="go('friendsScreen');loadFriends()" style="font-size:13px">←</div>
+      <div class="chavt" id="pcAvt" style="width:36px;height:36px;font-size:15px">?</div>
+      <div>
+        <div class="chnm" id="pcName">Friend</div>
+        <div class="chst"><span class="pls"></span> Friend</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="cb cb-mute" id="pcMuteBtn" onclick="togglePCMute()" style="width:36px;height:36px;font-size:15px">🎤</button>
+      <button class="cb cb-filter" onclick="togglePCFilter()" style="width:36px;height:36px;font-size:15px">✨</button>
+      <button class="cb cb-end" onclick="endPrivateCall()" style="width:36px;height:36px;font-size:15px">📵</button>
+    </div>
+  </div>
+  <!-- Private video area -->
+  <div style="position:relative;flex:1;background:#000;overflow:hidden;display:flex;flex-direction:column" id="pcVidArea">
+    <div style="width:100%;height:100%;background:radial-gradient(ellipse,#1a1a2e,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px" id="pcVidPh">
+      <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:32px" id="pcVidAvt">?</div>
+      <div style="color:var(--sub);font-size:14px" id="pcConnTxt">Connecting...</div>
+    </div>
+    <video id="pcRemoteVideo" autoplay playsinline style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>
+    <video id="pcLocalVideo" autoplay playsinline muted style="display:none;position:absolute;bottom:80px;right:12px;width:88px;height:118px;object-fit:cover;border-radius:14px;border:2px solid var(--acc);transform:scaleX(-1);z-index:5"></video>
+  </div>
+  <!-- Private chat messages -->
+  <div class="tcmsgs" id="pcMsgs" style="height:180px;flex:none">
+    <div class="sysmsg">Private chat with your friend</div>
+  </div>
+  <div class="tcbottom">
+    <div class="tcinprow">
+      <button class="emojibtn" onclick="toggleEP('pcEp')">😊</button>
+      <label class="emojibtn" style="cursor:pointer">📎<input type="file" accept="image/*" style="display:none" onchange="sendImage(this,'pcMsgs')"></label>
+      <input class="tcinp" id="pcInp" placeholder="Message your friend..." onkeydown="if(event.key==='Enter')sendPCMsg()">
+      <button class="sendbtn" onclick="sendPCMsg()">➤</button>
+    </div>
+    <div class="epicker" id="pcEp" style="bottom:55px">
+      <button class="ep" onclick="addPCEmoji('😀')">😀</button><button class="ep" onclick="addPCEmoji('😂')">😂</button>
+      <button class="ep" onclick="addPCEmoji('❤️')">❤️</button><button class="ep" onclick="addPCEmoji('🔥')">🔥</button>
+      <button class="ep" onclick="addPCEmoji('👍')">👍</button><button class="ep" onclick="addPCEmoji('😍')">😍</button>
+      <button class="ep" onclick="addPCEmoji('🎉')">🎉</button><button class="ep" onclick="addPCEmoji('😢')">😢</button>
+      <button class="ep" onclick="addPCEmoji('😊')">😊</button><button class="ep" onclick="addPCEmoji('🤣')">🤣</button>
+      <button class="ep" onclick="addPCEmoji('🥰')">🥰</button><button class="ep" onclick="addPCEmoji('👋')">👋</button>
+    </div>
   </div>
 </div>
 
@@ -593,15 +660,19 @@ button,input,select,textarea{font-family:inherit}
       <button class="repbtn" onclick="reportUser()">⚑ Report</button>
     </div>
 
+    <!-- Bottom controls: cam, mute, next, chat, end -->
     <div class="ctrlbar">
-      <button class="cb cb-mute" id="muteBtn" onclick="toggleMute()">🎤</button>
       <button class="cb cb-cam" id="camBtn" onclick="toggleCam()">📷</button>
-      <button class="cb cb-flip" onclick="flipCamera()" title="Flip Camera">🔄</button>
-      <button class="cb cb-filter" onclick="toggleFilter()" title="Video Filter">✨</button>
+      <button class="cb cb-mute" id="muteBtn" onclick="toggleMute()">🎤</button>
       <button class="cb cb-next" onclick="nextStranger()">⏭️</button>
       <button class="cb cb-msg" onclick="togglePanel()">💬</button>
-      <button class="cb cb-add" onclick="sendFriendReq()" title="Add Friend">👤+</button>
       <button class="cb cb-end" onclick="endChat()">📵</button>
+    </div>
+    <!-- Right side vertical: flip, filter, add friend -->
+    <div class="ctrlbar-right">
+      <button class="cb cb-flip" onclick="flipCamera()" title="Flip Camera" style="width:40px;height:40px;font-size:16px">🔄</button>
+      <button class="cb cb-filter" id="filterBtn" onclick="toggleFilter()" title="Video Filter" style="width:40px;height:40px;font-size:16px">✨</button>
+      <button class="cb cb-add" onclick="sendFriendReq()" title="Add Friend" style="width:40px;height:40px;font-size:16px">👤</button>
     </div>
   </div>
 
@@ -1275,19 +1346,19 @@ const FILTERS = [
 let curFilter = 0;
 
 function toggleFilter(){
-  const btn=document.querySelector('.cb-filter');
+  const btn=document.getElementById('filterBtn')||document.querySelector('.cb-filter');
+  // Apply filter ONLY to local video display (CSS only - not transmitted)
   const lv=document.getElementById('localVideo');
+  const pcLv=document.getElementById('pcLocalVideo');
   curFilter=(curFilter+1)%FILTERS.length;
   const f=FILTERS[curFilter];
-  lv.style.filter=f.css;
-  if(curFilter===0){
-    btn.classList.remove('on');
-    btn.textContent='✨';
-  } else {
-    btn.classList.add('on');
-    btn.textContent='✨';
+  if(lv) lv.style.filter=f.css;
+  if(pcLv) pcLv.style.filter=f.css;
+  if(btn){
+    if(curFilter===0){ btn.classList.remove('on'); }
+    else { btn.classList.add('on'); }
   }
-  toast('Filter: '+f.name);
+  toast('Filter: '+f.name+' (only you see this)');
 }
 
 // ── Friend Request ──────────────────────────────────────
@@ -1326,8 +1397,11 @@ function acceptFriend(name){
   if(!myFriends.includes(name)) myFriends.push(name);
   localStorage.setItem('cn_friends',JSON.stringify(myFriends));
   document.getElementById('frModal')?.remove();
-  socket.emit('friend_accepted',{roomId:S.roomId,toName:name,fromName:S.user?.name});
+  const myName = S.user?.name || 'Anonymous';
+  socket.emit('friend_accepted',{roomId:S.roomId,toName:name,fromName:myName});
   toast('🎉 '+name+' added as friend!');
+  // Auto start private chat
+  setTimeout(()=>startPrivateChat(name), 1000);
 }
 
 // ── Send Image ──────────────────────────────────────────
@@ -1462,6 +1536,167 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+// ── Friends Section ────────────────────────────────────
+function showFriendsSection(){
+  loadFriends();
+  go('friendsScreen');
+}
+
+function loadFriends(){
+  const friends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
+  const list = document.getElementById('friendsList');
+  const noMsg = document.getElementById('noFriendsMsg');
+  const count = document.getElementById('friendCount');
+  
+  count.textContent = friends.length + ' friend' + (friends.length !== 1 ? 's' : '');
+  
+  if(friends.length === 0){
+    if(noMsg) noMsg.style.display = 'block';
+    return;
+  }
+  if(noMsg) noMsg.style.display = 'none';
+  
+  // Clear existing friend items (keep noFriendsMsg)
+  const items = list.querySelectorAll('.friend-item');
+  items.forEach(i => i.remove());
+  
+  friends.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'friend-item ci';
+    div.innerHTML = `
+      <div class="ciavt" style="background:linear-gradient(135deg,var(--acc),var(--acc2));font-size:16px">${name[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cinm">${name}</div>
+        <div class="ciprev">Tap to start private chat</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="startPrivateChat('${name}')" style="padding:8px 14px;background:var(--acc);border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💬 Chat</button>
+        <button onclick="removeFriend('${name}')" style="padding:8px 10px;background:var(--s3);border:1px solid var(--bdr);border-radius:10px;color:var(--sub);font-size:12px;cursor:pointer">✕</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function removeFriend(name){
+  let friends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
+  friends = friends.filter(f => f !== name);
+  localStorage.setItem('cn_friends', JSON.stringify(friends));
+  loadFriends();
+  toast('Removed ' + name);
+}
+
+// ── Private Chat ────────────────────────────────────────
+let pcRoomId = null;
+let pcStream = null;
+let pcPc = null;
+let currentFriendName = null;
+
+function startPrivateChat(name){
+  currentFriendName = name;
+  document.getElementById('pcName').textContent = name;
+  document.getElementById('pcAvt').textContent = name[0].toUpperCase();
+  document.getElementById('pcMsgs').innerHTML = '<div class="sysmsg">Private chat with ' + name + '</div>';
+  go('privateChatScreen');
+  
+  // Notify friend via socket (if they are online)
+  socket.emit('private_call_request', {
+    toName: name,
+    fromName: S.user?.name || 'Anonymous',
+    fromSocket: socket.id
+  });
+  
+  document.getElementById('pcConnTxt').textContent = 'Calling ' + name + '...';
+}
+
+function endPrivateCall(){
+  if(pcPc){ pcPc.close(); pcPc = null; }
+  if(pcStream){ pcStream.getTracks().forEach(t=>t.stop()); pcStream = null; }
+  const rv = document.getElementById('pcRemoteVideo');
+  rv.srcObject = null; rv.style.display = 'none';
+  const lv = document.getElementById('pcLocalVideo');
+  lv.srcObject = null; lv.style.display = 'none';
+  document.getElementById('pcVidPh').style.display = 'flex';
+  go('friendsScreen');
+  loadFriends();
+}
+
+async function setupPrivateCall(init, roomId){
+  pcRoomId = roomId;
+  const iceResp = await fetch('/api/ice-servers');
+  const {iceServers} = await iceResp.json();
+  
+  pcPc = new RTCPeerConnection({iceServers, iceCandidatePoolSize:10});
+  
+  try{
+    pcStream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true},
+      video:{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15},facingMode:'user'}
+    });
+    const lv = document.getElementById('pcLocalVideo');
+    lv.srcObject = pcStream;
+    lv.style.display = 'block';
+    pcStream.getTracks().forEach(t => pcPc.addTrack(t, pcStream));
+  }catch(e){ toast('⚠️ Camera permission needed!'); }
+  
+  const remoteStream = new MediaStream();
+  const rv = document.getElementById('pcRemoteVideo');
+  rv.srcObject = remoteStream;
+  
+  pcPc.ontrack = e => {
+    remoteStream.addTrack(e.track);
+    if(e.track.kind === 'video'){
+      rv.style.display = 'block';
+      document.getElementById('pcVidPh').style.display = 'none';
+      rv.play().catch(()=>{setTimeout(()=>rv.play().catch(()=>{}),500);});
+      toast('🟢 Private call connected!');
+    }
+  };
+  
+  pcPc.onicecandidate = e => {
+    if(e.candidate) socket.emit('pc_ice', {roomId:pcRoomId, candidate:e.candidate});
+  };
+  
+  pcPc.oniceconnectionstatechange = ()=>{
+    if(pcPc.iceConnectionState==='connected') toast('🟢 Connected!');
+    if(pcPc.iceConnectionState==='failed') toast('❌ Call failed');
+  };
+  
+  if(init){
+    const offer = await pcPc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+    await pcPc.setLocalDescription(offer);
+    socket.emit('pc_offer', {roomId:pcRoomId, offer});
+  }
+}
+
+function togglePCMute(){
+  if(!pcStream) return;
+  const muted = !pcStream.getAudioTracks()[0]?.enabled;
+  pcStream.getAudioTracks().forEach(t=>t.enabled=muted);
+  const btn = document.getElementById('pcMuteBtn');
+  btn.textContent = muted ? '🎤' : '🔇';
+  toast(muted ? '🎤 Unmuted' : '🔇 Muted');
+}
+
+function togglePCFilter(){
+  const lv = document.getElementById('pcLocalVideo');
+  if(lv) toggleFilter();
+}
+
+function sendPCMsg(){
+  const i = document.getElementById('pcInp');
+  const t = i.value.trim(); if(!t) return;
+  addMsg('pcMsgs', t, 'me');
+  socket.emit('pc_message', {roomId:pcRoomId, text:t});
+  i.value = '';
+}
+
+function addPCEmoji(em){
+  const i = document.getElementById('pcInp');
+  i.value += em; i.focus();
+  document.getElementById('pcEp')?.classList.remove('show');
+}
+
 // ── Friend Request Socket Events ───────────────────────
 socket.on('friend_request', d=>{
   console.log('Friend request from:', d.fromName);
@@ -1478,6 +1713,64 @@ socket.on('image_message', d=>{
   addImgMsg(cid, d.imgData, 'them');
   if(S.mode!=='text' && !S.panelOpen) togglePanel();
   toast('📎 Image received!');
+});
+
+// ── Private Call Socket Events ─────────────────────────
+socket.on('private_call_request', async d => {
+  // Show incoming call notification
+  const old = document.getElementById('inCallModal');
+  if(old) old.remove();
+  const m = document.createElement('div');
+  m.id = 'inCallModal';
+  m.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--s1);border:2px solid var(--acc);border-radius:18px;padding:22px 24px;z-index:500;text-align:center;min-width:280px;box-shadow:0 8px 40px rgba(108,71,255,.3);animation:fadeUp .3s ease';
+  m.innerHTML = `
+    <div style="font-size:28px;margin-bottom:8px;animation:pulse 1s infinite">📞</div>
+    <div style="font-weight:800;font-size:17px;margin-bottom:6px">${d.fromName}</div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:18px">Calling you privately...</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="acceptPrivateCall('${d.fromName}','${d.roomId||'pc_'+Math.random().toString(36).substr(2,8)}')" style="padding:11px 22px;background:var(--acc2);border:none;border-radius:11px;color:#000;font-weight:800;font-size:14px;cursor:pointer">✅ Answer</button>
+      <button onclick="document.getElementById('inCallModal').remove()" style="padding:11px 22px;background:var(--acc3);border:none;border-radius:11px;color:#fff;font-size:14px;cursor:pointer">❌ Decline</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('inCallModal')?.remove(), 20000);
+});
+
+async function acceptPrivateCall(fromName, roomId){
+  document.getElementById('inCallModal')?.remove();
+  currentFriendName = fromName;
+  document.getElementById('pcName').textContent = fromName;
+  document.getElementById('pcAvt').textContent = fromName[0].toUpperCase();
+  document.getElementById('pcMsgs').innerHTML = '<div class="sysmsg">Private call with ' + fromName + '</div>';
+  go('privateChatScreen');
+  socket.emit('private_call_accepted', {roomId, fromName: S.user?.name});
+  await setupPrivateCall(false, roomId);
+}
+
+socket.on('private_call_accepted', async d => {
+  document.getElementById('pcConnTxt').textContent = 'Connected!';
+  const roomId = 'pc_' + socket.id.substr(0,8);
+  await setupPrivateCall(true, roomId);
+});
+
+socket.on('pc_offer', async d => {
+  if(!pcPc) await setupPrivateCall(false, d.roomId);
+  await pcPc.setRemoteDescription(new RTCSessionDescription(d.offer));
+  const ans = await pcPc.createAnswer();
+  await pcPc.setLocalDescription(ans);
+  socket.emit('pc_answer', {roomId:d.roomId, answer:ans});
+});
+
+socket.on('pc_answer', async d => {
+  if(pcPc) await pcPc.setRemoteDescription(new RTCSessionDescription(d.answer));
+});
+
+socket.on('pc_ice', async d => {
+  try{ if(pcPc && pcPc.remoteDescription) await pcPc.addIceCandidate(new RTCIceCandidate(d.candidate)); }catch(e){}
+});
+
+socket.on('pc_message', d => {
+  addMsg('pcMsgs', d.text, 'them');
 });
 
 // Close emoji pickers on outside click
