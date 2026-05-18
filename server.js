@@ -25,13 +25,12 @@ function httpsGet(url) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); }
-        catch(e) { reject(new Error('Parse error: ' + data)); }
+        catch(e) { reject(new Error('Parse error')); }
       });
     }).on('error', reject);
   });
 }
 
-// Working TURN servers — hardcoded as primary
 function getICEServers() {
   return [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -40,37 +39,21 @@ function getICEServers() {
     { urls: 'stun:stun3.l.google.com:19302' },
     { urls: 'stun:stun4.l.google.com:19302' },
     {
-      urls: 'turn:openrelay.metered.ca:80',
+      urls: [
+        'turn:openrelay.metered.ca:80',
+        'turn:openrelay.metered.ca:443',
+        'turn:openrelay.metered.ca:443?transport=tcp',
+        'turns:openrelay.metered.ca:443'
+      ],
       username: 'openrelayproject',
       credential: 'openrelayproject'
     },
     {
-      urls: 'turn:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turns:openrelay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:relay.metered.ca:80',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:relay.metered.ca:443',
-      username: 'openrelayproject',
-      credential: 'openrelayproject'
-    },
-    {
-      urls: 'turn:relay.metered.ca:443?transport=tcp',
+      urls: [
+        'turn:relay.metered.ca:80',
+        'turn:relay.metered.ca:443',
+        'turn:relay.metered.ca:443?transport=tcp'
+      ],
       username: 'openrelayproject',
       credential: 'openrelayproject'
     }
@@ -78,7 +61,6 @@ function getICEServers() {
 }
 
 app.get('/api/ice-servers', async (req, res) => {
-  // Try Metered API first
   try {
     const url = `https://${METERED_DOMAIN}/api/v1/turn/credentials?apiKey=${METERED_KEY}`;
     const result = await httpsGet(url);
@@ -88,15 +70,13 @@ app.get('/api/ice-servers', async (req, res) => {
       return;
     }
   } catch(e) {
-    console.log('Metered failed, using openrelay:', e.message);
+    console.log('Metered failed:', e.message);
   }
-  // Use openrelay fallback
   const servers = getICEServers();
   console.log('Using openrelay TURN servers:', servers.length);
   res.json({ iceServers: servers });
 });
 
-// ── In-memory store ───────────────────────────────────────
 const waitingUsers = { any: [], male: [], female: [] };
 const activeRooms  = new Map();
 const userMeta     = new Map();
@@ -125,6 +105,7 @@ io.on('connection', (socket) => {
       countryFilter: data.countryFilter || 'any',
       mode: data.mode || 'video',
     });
+    socket.emit('registered', { socketId: socket.id });
   });
 
   socket.on('find_stranger', (prefs) => {
@@ -133,28 +114,18 @@ io.on('connection', (socket) => {
     Object.assign(meta, prefs);
     meta.socketId = socket.id;
     removeFromWaiting(socket.id);
-
     const match = findMatch(meta);
-
     if (match) {
       const { queue: q, idx } = match;
       const stranger = q.splice(idx, 1)[0];
       removeFromWaiting(stranger.socketId);
-
       const roomId = Math.random().toString(36).substring(2, 10);
       activeRooms.set(roomId, { users: [socket.id, stranger.socketId] });
       socket.join(roomId);
       io.sockets.sockets.get(stranger.socketId)?.join(roomId);
-
       const sm = userMeta.get(stranger.socketId) || {};
-      io.to(socket.id).emit('matched', {
-        roomId, isInitiator: true,
-        stranger: { name: sm.name, country: sm.country, gender: sm.gender }
-      });
-      io.to(stranger.socketId).emit('matched', {
-        roomId, isInitiator: false,
-        stranger: { name: meta.name, country: meta.country, gender: meta.gender }
-      });
+      io.to(socket.id).emit('matched', { roomId, isInitiator: true, stranger: { name: sm.name, country: sm.country, gender: sm.gender } });
+      io.to(stranger.socketId).emit('matched', { roomId, isInitiator: false, stranger: { name: meta.name, country: meta.country, gender: meta.gender } });
     } else {
       waitingUsers.any.push(meta);
       socket.emit('waiting', { position: waitingUsers.any.length });
@@ -166,6 +137,9 @@ io.on('connection', (socket) => {
   socket.on('answer',        (d) => socket.to(d.roomId).emit('answer', d));
   socket.on('ice_candidate', (d) => socket.to(d.roomId).emit('ice_candidate', d));
   socket.on('message',       (d) => socket.to(d.roomId).emit('message', { text: d.text, from: socket.id }));
+  socket.on('friend_request',(d) => socket.to(d.roomId).emit('friend_request', { fromName: d.fromName }));
+  socket.on('friend_accepted',(d) => socket.to(d.roomId).emit('friend_accepted', { fromName: d.fromName }));
+  socket.on('image_message', (d) => socket.to(d.roomId).emit('image_message', { imgData: d.imgData }));
   socket.on('next',          () => handleLeave(socket));
   socket.on('disconnect',    () => handleLeave(socket));
 
