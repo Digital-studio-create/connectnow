@@ -6,6 +6,7 @@
 <title>ConnectNow — Meet Real People</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+<!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="/socket.io/socket.io.js"></script>
@@ -336,6 +337,7 @@ button,input,select,textarea{font-family:inherit}
 <body>
 <div class="gbg"><div class="gb1"></div><div class="gb2"></div></div>
 
+<!-- LOADING -->
 <div class="sc" id="loadScreen">
   <div style="text-align:center">
     <div class="load-logo">🔗</div>
@@ -345,6 +347,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- AGE GATE -->
 <div class="sc off" id="ageGate">
   <div class="age-wrap">
     <div class="age-ic">🔞</div>
@@ -356,6 +359,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- LOGIN -->
 <div class="sc off" id="loginScreen">
   <div class="lbox">
     <div class="llogo"><div class="lic">🔗</div><h1>Connect<span>Now</span></h1></div>
@@ -399,6 +403,7 @@ button,input,select,textarea{font-family:inherit}
       <button class="btn-verify" id="verifyBtn" onclick="verifyOTP()">✓ Verify & Continue</button>
     </div>
 
+    <!-- Profile setup -->
     <div class="prof-area" id="profArea">
       <p class="ptitle">👤 Complete Your Profile</p>
       <div class="fwrap">
@@ -438,6 +443,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- HOME -->
 <div class="sc off" id="homeScreen">
   <div class="topbar">
     <div class="upill">
@@ -522,6 +528,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- FRIENDS SCREEN -->
 <div class="sc off" id="friendsScreen">
   <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px">
@@ -539,6 +546,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- PRIVATE CHAT SCREEN -->
 <div class="sc off" id="privateChatScreen">
   <div class="tctop">
     <div style="display:flex;align-items:center;gap:10px">
@@ -555,6 +563,7 @@ button,input,select,textarea{font-family:inherit}
       <button class="cb cb-end" onclick="endPrivateCall()" style="width:36px;height:36px;font-size:15px">📵</button>
     </div>
   </div>
+  <!-- Private video area -->
   <div style="position:relative;flex:1;background:#000;overflow:hidden;display:flex;flex-direction:column" id="pcVidArea">
     <div style="width:100%;height:100%;background:radial-gradient(ellipse,#1a1a2e,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px" id="pcVidPh">
       <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:32px" id="pcVidAvt">?</div>
@@ -563,6 +572,7 @@ button,input,select,textarea{font-family:inherit}
     <video id="pcRemoteVideo" autoplay playsinline style="display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></video>
     <video id="pcLocalVideo" autoplay playsinline muted style="display:none;position:absolute;bottom:80px;right:12px;width:88px;height:118px;object-fit:cover;border-radius:14px;border:2px solid var(--acc);transform:scaleX(-1);z-index:5"></video>
   </div>
+  <!-- Private chat messages -->
   <div class="tcmsgs" id="pcMsgs" style="height:180px;flex:none">
     <div class="sysmsg">Private chat with your friend</div>
   </div>
@@ -584,6 +594,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- PREMIUM MODAL -->
 <div class="mbg off" id="premModal">
   <div class="msheet">
     <button class="mclose" onclick="hidePrem()">✕</button>
@@ -591,13 +602,14 @@ button,input,select,textarea{font-family:inherit}
     <h2 class="mtitle">⭐ Go Premium</h2>
     <p class="msub">Unlock filters & meet who you want</p>
     <div class="plan" id="pl1" onclick="pickPlan('weekly')"><div class="prow"><div class="pnm">Weekly</div><div class="ppr">$1.99<span>/week</span></div></div><div class="pfeats">✅ <b>Gender Filter</b><br>✅ <b>Country Filter</b><br>✅ No ads</div></div>
-    <div class="plan pop" id="pl2" onclick="pickPlan('monthly')"><div class="prow"><div class="ppr">$4.99<span>/month</span></div></div><div class="pfeats">✅ <b>Gender Filter</b><br>✅ <b>Country Filter</b><br>✅ <b>Priority matching</b><br>✅ Profile badge</div></div>
-    <div class="plan" id="pl3" onclick="pickPlan('yearly')"><div class="prow"><div class="ppr">$29.99<span>/year</span></div></div><div class="pfeats">✅ All features<br>✅ <b>Save 50%</b><br>✅ Early access</div></div>
+    <div class="plan pop" id="pl2" onclick="pickPlan('monthly')"><div class="prow"><div class="pnm">Monthly</div><div class="ppr">$4.99<span>/month</span></div></div><div class="pfeats">✅ <b>Gender Filter</b><br>✅ <b>Country Filter</b><br>✅ <b>Priority matching</b><br>✅ Profile badge</div></div>
+    <div class="plan" id="pl3" onclick="pickPlan('yearly')"><div class="prow"><div class="pnm">Yearly</div><div class="ppr">$29.99<span>/year</span></div></div><div class="pfeats">✅ All features<br>✅ <b>Save 50%</b><br>✅ Early access</div></div>
     <button class="btn-sub" onclick="doSub()">🚀 Subscribe Now</button>
     <p style="text-align:center;font-size:11px;color:var(--sub);margin-top:10px"><a href="#" style="color:var(--acc2)">Terms</a> · <a href="#" style="color:var(--acc2)">Refund Policy</a></p>
   </div>
 </div>
 
+<!-- PROFILE MODAL -->
 <div class="mbg off" id="profModal">
   <div class="msheet">
     <button class="mclose" onclick="hideProfModal()">✕</button>
@@ -614,6 +626,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- SEARCHING -->
 <div id="searching" class="off">
   <div class="spin-wrap"><div class="sring"></div><div class="sem">🔍</div></div>
   <div class="sttl">Finding a stranger...</div>
@@ -621,6 +634,7 @@ button,input,select,textarea{font-family:inherit}
   <button class="btn-cancel" onclick="cancelSearch()">Cancel</button>
 </div>
 
+<!-- CHAT SCREEN -->
 <div class="sc off" id="chatScreen">
   <div class="chatheader">
     <div class="chleft">
@@ -646,6 +660,7 @@ button,input,select,textarea{font-family:inherit}
       <button class="repbtn" onclick="reportUser()">⚑ Report</button>
     </div>
 
+    <!-- Bottom controls: cam, mute, next, chat, end -->
     <div class="ctrlbar">
       <button class="cb cb-cam" id="camBtn" onclick="toggleCam()">📷</button>
       <button class="cb cb-mute" id="muteBtn" onclick="toggleMute()">🎤</button>
@@ -653,6 +668,7 @@ button,input,select,textarea{font-family:inherit}
       <button class="cb cb-msg" onclick="togglePanel()">💬</button>
       <button class="cb cb-end" onclick="endChat()">📵</button>
     </div>
+    <!-- Right side vertical: flip, filter, add friend -->
     <div class="ctrlbar-right">
       <button class="cb cb-flip" onclick="flipCamera()" title="Flip Camera" style="width:40px;height:40px;font-size:16px">🔄</button>
       <button class="cb cb-filter" id="filterBtn" onclick="toggleFilter()" title="Video Filter" style="width:40px;height:40px;font-size:16px">✨</button>
@@ -660,6 +676,7 @@ button,input,select,textarea{font-family:inherit}
     </div>
   </div>
 
+  <!-- Audio mode -->
   <div class="audiosc" id="audioSc" style="display:none">
     <div class="aavt" style="background:linear-gradient(135deg,var(--acc),var(--acc2))" id="aAvt">?</div>
     <div class="viz"><div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div><div class="vb"></div></div>
@@ -672,6 +689,7 @@ button,input,select,textarea{font-family:inherit}
     </div>
   </div>
 
+  <!-- Chat panel -->
   <div class="cpanel closed" id="cpanel" style="position:relative">
     <div class="cmsgs" id="cpMsgs"></div>
     <div id="friendReqSent" style="display:none;text-align:center;padding:8px;font-size:12px;color:var(--acc2)">
@@ -698,6 +716,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 </div>
 
+<!-- TEXT CHAT -->
 <div class="sc off" id="textChatScreen">
   <div class="tctop">
     <div style="display:flex;align-items:center;gap:10px">
@@ -1136,3 +1155,630 @@ socket.on('ice_candidate',async d=>{
       S._iceQ.push(d.candidate);
     }
   }catch(e){ console.log('ICE err:',e.message); }
+});
+
+// ── WebRTC ─────────────────────────────────────────
+async function setupRTC(init){
+  // Get ICE servers from backend
+  let iceServers = [
+    {urls:'stun:stun.l.google.com:19302'},
+    {urls:'stun:stun1.l.google.com:19302'},
+    {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'},
+    {urls:'turns:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'}
+  ];
+  try{
+    const r = await fetch('/api/ice-servers');
+    const d = await r.json();
+    if(d.iceServers && d.iceServers.length > 0){
+      iceServers = d.iceServers;
+      console.log('Using server ICE:', iceServers.length, 'servers');
+    }
+  }catch(e){ console.log('Using fallback ICE'); }
+
+  const cfg = {
+    iceServers,
+    iceTransportPolicy: 'all',
+    iceCandidatePoolSize: 10,
+    bundlePolicy: 'max-bundle',
+    rtcpMuxPolicy: 'require'
+  };
+
+  S.pc = new RTCPeerConnection(cfg);
+  S._iceQ = [];
+  console.log('RTCPeerConnection created with', iceServers.length, 'ICE servers');
+
+  // Get local media
+  try{
+    const constraints = S.mode==='audio'
+      ? {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100}, video:false}
+      : {audio:{echoCancellation:true,noiseSuppression:true,sampleRate:44100},
+         video:{width:{ideal:320,max:640}, height:{ideal:240,max:480}, frameRate:{ideal:15,max:20}, facingMode:'user'}};
+    S.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+    if(S.mode==='video'){
+      const lv = document.getElementById('localVideo');
+      lv.srcObject = S.localStream;
+      lv.style.display = 'block';
+      document.getElementById('selfPh').style.display = 'none';
+    }
+    S.localStream.getTracks().forEach(t => {
+      S.pc.addTrack(t, S.localStream);
+      console.log('Added local track:', t.kind);
+    });
+  }catch(e){
+    toast('⚠️ Camera/mic permission needed!');
+    console.error('getUserMedia error:', e.name, e.message);
+  }
+
+  // Remote track handler - simplified and robust
+  const remoteStream = new MediaStream();
+  const rv = document.getElementById('remoteVideo');
+  rv.srcObject = remoteStream;
+  rv.autoplay = true;
+  rv.playsInline = true;
+  rv.muted = false;
+
+  S.pc.ontrack = e => {
+    console.log('ontrack:', e.track.kind, 'state:', e.track.readyState);
+    remoteStream.addTrack(e.track);
+
+    if(e.track.kind === 'video'){
+      rv.style.display = 'block';
+      document.getElementById('vidPh').style.display = 'none';
+      document.getElementById('selfPh').style.display = 'none';
+      toast('📹 Video stream received!');
+    }
+
+    // Force play
+    rv.play().catch(()=>{
+      setTimeout(()=>rv.play().catch(()=>{}), 500);
+    });
+
+    e.track.onunmute = ()=>{
+      console.log('Track unmuted:', e.track.kind);
+      rv.play().catch(()=>{});
+      if(e.track.kind==='video') toast('🟢 Video live!');
+    };
+  };
+
+  // ICE candidate handler
+  S.pc.onicecandidate = e => {
+    if(e.candidate){
+      console.log('ICE candidate type:', e.candidate.type, 'protocol:', e.candidate.protocol);
+      socket.emit('ice_candidate', {roomId: S.roomId, candidate: e.candidate});
+    } else {
+      console.log('ICE gathering complete');
+    }
+  };
+
+  S.pc.onicegatheringstatechange = () => {
+    console.log('ICE gathering state:', S.pc.iceGatheringState);
+  };
+
+  S.pc.oniceconnectionstatechange = () => {
+    const st = S.pc.iceConnectionState;
+    console.log('ICE connection state:', st);
+    if(st === 'connected' || st === 'completed'){
+      toast('🟢 Connected!');
+      const rv = document.getElementById('remoteVideo');
+      if(rv.srcObject) rv.play().catch(()=>{});
+    }
+    if(st === 'failed'){
+      toast('❌ Connection failed — tap Next');
+      try{ S.pc.restartIce(); console.log('ICE restart attempted'); }catch(e){}
+    }
+    if(st === 'disconnected'){
+      toast('⚠️ Reconnecting...');
+      setTimeout(()=>{
+        if(S.pc && S.pc.iceConnectionState === 'disconnected'){
+          try{ S.pc.restartIce(); }catch(e){}
+        }
+      }, 3000);
+    }
+  };
+
+  S.pc.onconnectionstatechange = () => {
+    console.log('Connection state:', S.pc.connectionState);
+    if(S.pc.connectionState === 'failed'){
+      toast('❌ Connection failed');
+    }
+  };
+
+  // Create offer if initiator
+  if(init){
+    try{
+      const offer = await S.pc.createOffer({
+        offerToReceiveAudio: true,
+        offerToReceiveVideo: S.mode !== 'audio'
+      });
+      await S.pc.setLocalDescription(offer);
+      socket.emit('offer', {roomId: S.roomId, offer});
+      console.log('Offer sent');
+    }catch(e){
+      console.error('Offer creation error:', e);
+    }
+  }
+
+}
+
+
+
+// ── Camera Flip ────────────────────────────────────────
+let currentFacingMode = 'user';
+async function flipCamera(){
+  if(S.mode==='audio'||!S.localStream){toast('Audio mode mein flip nahi!');return;}
+  currentFacingMode = currentFacingMode==='user'?'environment':'user';
+  const videoTrack = S.localStream.getVideoTracks()[0];
+  if(!videoTrack){toast('Camera not found');return;}
+  try{
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:currentFacingMode,width:{ideal:320},height:{ideal:240},frameRate:{ideal:15}},
+      audio:false
+    });
+    const newVT = newStream.getVideoTracks()[0];
+    const sender = S.pc?.getSenders().find(s=>s.track?.kind==='video');
+    if(sender) await sender.replaceTrack(newVT);
+    S.localStream.removeTrack(videoTrack);
+    S.localStream.addTrack(newVT);
+    videoTrack.stop();
+    const lv=document.getElementById('localVideo');
+    lv.srcObject=S.localStream;
+    lv.style.transform = currentFacingMode==='user'?'scaleX(-1)':'scaleX(1)';
+    toast(currentFacingMode==='user'?'🤳 Front camera':'📷 Back camera');
+  }catch(e){
+    currentFacingMode=currentFacingMode==='user'?'environment':'user';
+    toast('⚠️ Camera flip failed: '+e.message);
+  }
+}
+
+// ── Video Filters ───────────────────────────────────────
+const FILTERS = [
+  {name:'Normal',css:'none'},
+  {name:'B&W',css:'grayscale(100%)'},
+  {name:'Vintage',css:'sepia(80%) contrast(1.1)'},
+  {name:'Vivid',css:'saturate(2) contrast(1.2) brightness(1.1)'},
+  {name:'Dreamy',css:'hue-rotate(30deg) brightness(1.2) blur(0.5px)'},
+  {name:'Neon',css:'hue-rotate(180deg) saturate(3) contrast(1.3)'},
+  {name:'Warm',css:'sepia(30%) saturate(1.5) brightness(1.1)'},
+  {name:'Cool',css:'hue-rotate(200deg) saturate(1.3)'},
+];
+let curFilter = 0;
+
+function toggleFilter(){
+  const btn=document.getElementById('filterBtn')||document.querySelector('.cb-filter');
+  // Apply filter ONLY to local video display (CSS only - not transmitted)
+  const lv=document.getElementById('localVideo');
+  const pcLv=document.getElementById('pcLocalVideo');
+  curFilter=(curFilter+1)%FILTERS.length;
+  const f=FILTERS[curFilter];
+  if(lv) lv.style.filter=f.css;
+  if(pcLv) pcLv.style.filter=f.css;
+  if(btn){
+    if(curFilter===0){ btn.classList.remove('on'); }
+    else { btn.classList.add('on'); }
+  }
+  toast('Filter: '+f.name+' (only you see this)');
+}
+
+// ── Friend Request ──────────────────────────────────────
+let pendingFriendRoom = null;
+const myFriends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
+
+function sendFriendReq(){
+  if(!S.roomId){toast('Connect to someone first!');return;}
+  const nm=document.getElementById('chNm')?.textContent||'Stranger';
+  socket.emit('friend_request',{roomId:S.roomId,fromName:S.user?.name||'Anonymous'});
+  toast('👤 Friend request sent to '+nm+'!');
+  document.getElementById('friendReqSent').style.display='block';
+  setTimeout(()=>{document.getElementById('friendReqSent').style.display='none';},3000);
+}
+
+function showFriendModal(fromName){
+  const old=document.getElementById('frModal');
+  if(old)old.remove();
+  const m=document.createElement('div');
+  m.id='frModal';
+  m.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--s1);border:2px solid var(--acc2);border-radius:18px;padding:22px 24px;z-index:500;text-align:center;min-width:280px;box-shadow:0 8px 40px rgba(0,229,160,.2);animation:fadeUp .3s ease';
+  m.innerHTML=`
+    <div style="font-size:32px;margin-bottom:8px">🤝</div>
+    <div style="font-weight:800;font-size:17px;margin-bottom:6px;color:var(--text)">${fromName}</div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:18px">wants to be your friend!</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="acceptFriend('${fromName}')" style="padding:11px 22px;background:var(--acc2);border:none;border-radius:11px;color:#000;font-weight:800;font-size:14px;cursor:pointer;transition:all .2s">✅ Accept</button>
+      <button onclick="document.getElementById('frModal').remove()" style="padding:11px 22px;background:var(--s3);border:1px solid var(--bdr);border-radius:11px;color:var(--sub);font-size:14px;cursor:pointer">❌ Decline</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('frModal')?.remove(),15000);
+}
+
+function acceptFriend(name){
+  if(!myFriends.includes(name)) myFriends.push(name);
+  localStorage.setItem('cn_friends',JSON.stringify(myFriends));
+  document.getElementById('frModal')?.remove();
+  const myName = S.user?.name || 'Anonymous';
+  socket.emit('friend_accepted',{roomId:S.roomId,toName:name,fromName:myName});
+  toast('🎉 '+name+' added as friend!');
+  // Auto start private chat
+  setTimeout(()=>startPrivateChat(name), 1000);
+}
+
+// ── Send Image ──────────────────────────────────────────
+function sendImage(input,cid){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>3*1024*1024){toast('⚠️ Max 3MB image!');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const d=e.target.result;
+    addImgMsg(cid,d,'me');
+    if(S.roomId) socket.emit('image_message',{roomId:S.roomId,imgData:d});
+    toast('📎 Image sent!');
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function addImgMsg(cid,src,type){
+  const c=document.getElementById(cid);if(!c)return;
+  const d=document.createElement('div');
+  d.className='msg '+type;
+  d.style.cssText='padding:4px;max-width:200px;background:transparent';
+  const img=document.createElement('img');
+  img.src=src;
+  img.style.cssText='width:100%;max-width:200px;border-radius:12px;display:block;cursor:pointer;border:2px solid var(--bdr)';
+  img.onclick=()=>window.open(src,'_blank');
+  d.appendChild(img);
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+
+// ── Controls ───────────────────────────────────────
+function toggleMute(){
+  S.muted=!S.muted;
+  if(S.localStream)S.localStream.getAudioTracks().forEach(t=>t.enabled=!S.muted);
+  const b1=document.getElementById('muteBtn');
+  const b2=document.getElementById('aMuteBtn');
+  if(b1){b1.textContent=S.muted?'🔇':'🎤';b1.classList.toggle('on',S.muted);}
+  if(b2){b2.textContent=S.muted?'🔇':'🎤';b2.classList.toggle('on',S.muted);}
+  toast(S.muted?'🔇 Muted':'🎤 Unmuted');
+}
+
+function toggleCam(){
+  S.camOff=!S.camOff;
+  if(S.localStream)S.localStream.getVideoTracks().forEach(t=>t.enabled=!S.camOff);
+  const b=document.getElementById('camBtn');
+  if(b){b.textContent=S.camOff?'🚫':'📷';b.classList.toggle('off',S.camOff);}
+  toast(S.camOff?'📷 Camera off':'📷 Camera on');
+}
+
+function togglePanel(){
+  S.panelOpen=!S.panelOpen;
+  const p=document.getElementById('cpanel');
+  p.classList.toggle('closed',!S.panelOpen);
+  p.classList.toggle('open',S.panelOpen);
+}
+
+function toggleEP(id){
+  document.getElementById(id).classList.toggle('show');
+}
+
+function em1(e){const i=document.getElementById('cpInp');i.value+=e;i.focus();document.getElementById('ep1').classList.remove('show');}
+function em2(e){const i=document.getElementById('tcInp');i.value+=e;i.focus();document.getElementById('ep2').classList.remove('show');}
+
+function nextStranger(){toast('🔀 Finding next...');cleanupChat();setTimeout(findStranger,600);}
+function endChat(){cleanupChat();go('homeScreen');toast('Chat ended');}
+
+function cleanupChat(){
+  socket.emit('next');
+  // Re-register user so they appear online again
+  if(S.user){
+    setTimeout(()=>{
+      socket.emit('register',{name:S.user.name,gender:S.user.gender,country:S.user.country,isPremium:S.isPremium,mode:S.mode});
+    }, 300);
+  }
+  stopTimer();
+  S.panelOpen=false;
+  document.getElementById('cpanel').classList.add('closed');
+  document.getElementById('cpanel').classList.remove('open');
+  if(S.pc){S.pc.close();S.pc=null;}
+  if(S.localStream){S.localStream.getTracks().forEach(t=>t.stop());S.localStream=null;}
+  const rv=document.getElementById('remoteVideo');rv.style.display='none';rv.srcObject=null;rv.load();
+  const lv=document.getElementById('localVideo');lv.style.display='none';lv.srcObject=null;
+  document.getElementById('selfPh').style.display='flex';
+  document.getElementById('vidPh').style.display='flex';
+  document.getElementById('vPhTxt').textContent='Connecting...';
+  document.getElementById('ep1').classList.remove('show');
+  S.roomId=null;
+}
+
+function reportUser(){toast('⚑ User reported!');endChat();}
+
+// ── Timer ──────────────────────────────────────────
+function startTimer(){
+  S.timerSec=0;stopTimer();
+  S.timerInt=setInterval(()=>{
+    S.timerSec++;
+    const m=String(Math.floor(S.timerSec/60)).padStart(2,'0');
+    const s=String(S.timerSec%60).padStart(2,'0');
+    const el=document.getElementById('aTimer');
+    if(el)el.textContent=m+':'+s;
+  },1000);
+}
+function stopTimer(){if(S.timerInt){clearInterval(S.timerInt);S.timerInt=null;}}
+
+// ── Messages ───────────────────────────────────────
+function sendVM(){const i=document.getElementById('cpInp');const t=i.value.trim();if(!t)return;addMsg('cpMsgs',t,'me');socket.emit('message',{roomId:S.roomId,text:t});i.value='';}
+function sendTM(){const i=document.getElementById('tcInp');const t=i.value.trim();if(!t)return;addMsg('tcMsgs',t,'me');socket.emit('message',{roomId:S.roomId,text:t});i.value='';}
+
+function addMsg(cid,text,type){
+  const c=document.getElementById(cid);if(!c)return;
+  const d=document.createElement('div');
+  d.className='msg '+type;d.textContent=text;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+}
+
+// ── Toast ──────────────────────────────────────────
+function toast(msg,dur=2800){
+  const el=document.getElementById('toastEl');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+// ── OTP keyboard ───────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.target.classList.contains('otp-i')&&e.key==='Backspace'&&!e.target.value){
+    const bs=document.querySelectorAll('.otp-i');
+    const i=Array.from(bs).indexOf(e.target);
+    if(i>0)bs[i-1].focus();
+  }
+});
+
+// ── Friends Section ────────────────────────────────────
+function showFriendsSection(){
+  loadFriends();
+  go('friendsScreen');
+}
+
+function loadFriends(){
+  const friends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
+  const list = document.getElementById('friendsList');
+  const noMsg = document.getElementById('noFriendsMsg');
+  const count = document.getElementById('friendCount');
+  
+  count.textContent = friends.length + ' friend' + (friends.length !== 1 ? 's' : '');
+  
+  if(friends.length === 0){
+    if(noMsg) noMsg.style.display = 'block';
+    return;
+  }
+  if(noMsg) noMsg.style.display = 'none';
+  
+  // Clear existing friend items (keep noFriendsMsg)
+  const items = list.querySelectorAll('.friend-item');
+  items.forEach(i => i.remove());
+  
+  friends.forEach(name => {
+    const div = document.createElement('div');
+    div.className = 'friend-item ci';
+    div.innerHTML = `
+      <div class="ciavt" style="background:linear-gradient(135deg,var(--acc),var(--acc2));font-size:16px">${name[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="cinm">${name}</div>
+        <div class="ciprev">Tap to start private chat</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="startPrivateChat('${name}')" style="padding:8px 14px;background:var(--acc);border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💬 Chat</button>
+        <button onclick="removeFriend('${name}')" style="padding:8px 10px;background:var(--s3);border:1px solid var(--bdr);border-radius:10px;color:var(--sub);font-size:12px;cursor:pointer">✕</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function removeFriend(name){
+  let friends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
+  friends = friends.filter(f => f !== name);
+  localStorage.setItem('cn_friends', JSON.stringify(friends));
+  loadFriends();
+  toast('Removed ' + name);
+}
+
+// ── Private Chat ────────────────────────────────────────
+let pcRoomId = null;
+let pcStream = null;
+let pcPc = null;
+let currentFriendName = null;
+
+function startPrivateChat(name){
+  currentFriendName = name;
+  document.getElementById('pcName').textContent = name;
+  document.getElementById('pcAvt').textContent = name[0].toUpperCase();
+  document.getElementById('pcMsgs').innerHTML = '<div class="sysmsg">Private chat with ' + name + '</div>';
+  go('privateChatScreen');
+  
+  // Notify friend via socket (if they are online)
+  socket.emit('private_call_request', {
+    toName: name,
+    fromName: S.user?.name || 'Anonymous',
+    fromSocket: socket.id
+  });
+  
+  document.getElementById('pcConnTxt').textContent = 'Calling ' + name + '...';
+}
+
+function endPrivateCall(){
+  if(pcPc){ pcPc.close(); pcPc = null; }
+  if(pcStream){ pcStream.getTracks().forEach(t=>t.stop()); pcStream = null; }
+  const rv = document.getElementById('pcRemoteVideo');
+  rv.srcObject = null; rv.style.display = 'none';
+  const lv = document.getElementById('pcLocalVideo');
+  lv.srcObject = null; lv.style.display = 'none';
+  document.getElementById('pcVidPh').style.display = 'flex';
+  go('friendsScreen');
+  loadFriends();
+}
+
+async function setupPrivateCall(init, roomId){
+  pcRoomId = roomId;
+  const iceResp = await fetch('/api/ice-servers');
+  const {iceServers} = await iceResp.json();
+  
+  pcPc = new RTCPeerConnection({iceServers, iceCandidatePoolSize:10});
+  
+  try{
+    pcStream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:true,noiseSuppression:true},
+      video:{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15},facingMode:'user'}
+    });
+    const lv = document.getElementById('pcLocalVideo');
+    lv.srcObject = pcStream;
+    lv.style.display = 'block';
+    pcStream.getTracks().forEach(t => pcPc.addTrack(t, pcStream));
+  }catch(e){ toast('⚠️ Camera permission needed!'); }
+  
+  const remoteStream = new MediaStream();
+  const rv = document.getElementById('pcRemoteVideo');
+  rv.srcObject = remoteStream;
+  
+  pcPc.ontrack = e => {
+    remoteStream.addTrack(e.track);
+    if(e.track.kind === 'video'){
+      rv.style.display = 'block';
+      document.getElementById('pcVidPh').style.display = 'none';
+      rv.play().catch(()=>{setTimeout(()=>rv.play().catch(()=>{}),500);});
+      toast('🟢 Private call connected!');
+    }
+  };
+  
+  pcPc.onicecandidate = e => {
+    if(e.candidate) socket.emit('pc_ice', {roomId:pcRoomId, candidate:e.candidate});
+  };
+  
+  pcPc.oniceconnectionstatechange = ()=>{
+    if(pcPc.iceConnectionState==='connected') toast('🟢 Connected!');
+    if(pcPc.iceConnectionState==='failed') toast('❌ Call failed');
+  };
+  
+  if(init){
+    const offer = await pcPc.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+    await pcPc.setLocalDescription(offer);
+    socket.emit('pc_offer', {roomId:pcRoomId, offer});
+  }
+}
+
+function togglePCMute(){
+  if(!pcStream) return;
+  const muted = !pcStream.getAudioTracks()[0]?.enabled;
+  pcStream.getAudioTracks().forEach(t=>t.enabled=muted);
+  const btn = document.getElementById('pcMuteBtn');
+  btn.textContent = muted ? '🎤' : '🔇';
+  toast(muted ? '🎤 Unmuted' : '🔇 Muted');
+}
+
+function togglePCFilter(){
+  const lv = document.getElementById('pcLocalVideo');
+  if(lv) toggleFilter();
+}
+
+function sendPCMsg(){
+  const i = document.getElementById('pcInp');
+  const t = i.value.trim(); if(!t) return;
+  addMsg('pcMsgs', t, 'me');
+  socket.emit('pc_message', {roomId:pcRoomId, text:t});
+  i.value = '';
+}
+
+function addPCEmoji(em){
+  const i = document.getElementById('pcInp');
+  i.value += em; i.focus();
+  document.getElementById('pcEp')?.classList.remove('show');
+}
+
+// ── Friend Request Socket Events ───────────────────────
+socket.on('friend_request', d=>{
+  console.log('Friend request from:', d.fromName);
+  showFriendModal(d.fromName || 'Stranger');
+});
+
+socket.on('friend_accepted', d=>{
+  toast('🎉 '+d.fromName+' accepted your friend request!');
+});
+
+// ── Image Message Socket ────────────────────────────────
+socket.on('image_message', d=>{
+  const cid = S.mode==='text'?'tcMsgs':'cpMsgs';
+  addImgMsg(cid, d.imgData, 'them');
+  if(S.mode!=='text' && !S.panelOpen) togglePanel();
+  toast('📎 Image received!');
+});
+
+// ── Private Call Socket Events ─────────────────────────
+socket.on('private_call_request', async d => {
+  // Show incoming call notification
+  const old = document.getElementById('inCallModal');
+  if(old) old.remove();
+  const m = document.createElement('div');
+  m.id = 'inCallModal';
+  m.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--s1);border:2px solid var(--acc);border-radius:18px;padding:22px 24px;z-index:500;text-align:center;min-width:280px;box-shadow:0 8px 40px rgba(108,71,255,.3);animation:fadeUp .3s ease';
+  m.innerHTML = `
+    <div style="font-size:28px;margin-bottom:8px;animation:pulse 1s infinite">📞</div>
+    <div style="font-weight:800;font-size:17px;margin-bottom:6px">${d.fromName}</div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:18px">Calling you privately...</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="acceptPrivateCall('${d.fromName}','${d.roomId||'pc_'+Math.random().toString(36).substr(2,8)}')" style="padding:11px 22px;background:var(--acc2);border:none;border-radius:11px;color:#000;font-weight:800;font-size:14px;cursor:pointer">✅ Answer</button>
+      <button onclick="document.getElementById('inCallModal').remove()" style="padding:11px 22px;background:var(--acc3);border:none;border-radius:11px;color:#fff;font-size:14px;cursor:pointer">❌ Decline</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('inCallModal')?.remove(), 20000);
+});
+
+async function acceptPrivateCall(fromName, roomId){
+  document.getElementById('inCallModal')?.remove();
+  currentFriendName = fromName;
+  document.getElementById('pcName').textContent = fromName;
+  document.getElementById('pcAvt').textContent = fromName[0].toUpperCase();
+  document.getElementById('pcMsgs').innerHTML = '<div class="sysmsg">Private call with ' + fromName + '</div>';
+  go('privateChatScreen');
+  socket.emit('private_call_accepted', {roomId, fromName: S.user?.name});
+  await setupPrivateCall(false, roomId);
+}
+
+socket.on('private_call_accepted', async d => {
+  document.getElementById('pcConnTxt').textContent = 'Connected!';
+  const roomId = 'pc_' + socket.id.substr(0,8);
+  await setupPrivateCall(true, roomId);
+});
+
+socket.on('pc_offer', async d => {
+  if(!pcPc) await setupPrivateCall(false, d.roomId);
+  await pcPc.setRemoteDescription(new RTCSessionDescription(d.offer));
+  const ans = await pcPc.createAnswer();
+  await pcPc.setLocalDescription(ans);
+  socket.emit('pc_answer', {roomId:d.roomId, answer:ans});
+});
+
+socket.on('pc_answer', async d => {
+  if(pcPc) await pcPc.setRemoteDescription(new RTCSessionDescription(d.answer));
+});
+
+socket.on('pc_ice', async d => {
+  try{ if(pcPc && pcPc.remoteDescription) await pcPc.addIceCandidate(new RTCIceCandidate(d.candidate)); }catch(e){}
+});
+
+socket.on('pc_message', d => {
+  addMsg('pcMsgs', d.text, 'them');
+});
+
+// Close emoji pickers on outside click
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.epicker')&&!e.target.classList.contains('emojibtn')){
+    document.querySelectorAll('.epicker').forEach(ep=>ep.classList.remove('show'));
+  }
+});
+</script>
+</body>
+</html>
