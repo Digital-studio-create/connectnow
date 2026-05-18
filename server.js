@@ -137,9 +137,20 @@ io.on('connection', (socket) => {
   socket.on('answer',        (d) => socket.to(d.roomId).emit('answer', d));
   socket.on('ice_candidate', (d) => socket.to(d.roomId).emit('ice_candidate', d));
   socket.on('message',       (d) => socket.to(d.roomId).emit('message', { text: d.text, from: socket.id }));
-  socket.on('friend_request',(d) => socket.to(d.roomId).emit('friend_request', { fromName: d.fromName }));
-  socket.on('friend_accepted',(d) => socket.to(d.roomId).emit('friend_accepted', { fromName: d.fromName }));
-  socket.on('image_message', (d) => socket.to(d.roomId).emit('image_message', { imgData: d.imgData }));
+  socket.on('friend_request',  (d) => socket.to(d.roomId).emit('friend_request', { fromName: d.fromName }));
+  socket.on('friend_accepted', (d) => socket.to(d.roomId).emit('friend_accepted', { fromName: d.fromName }));
+  socket.on('image_message',   (d) => socket.to(d.roomId).emit('image_message', { imgData: d.imgData }));
+  
+  // Private call events - broadcast to all (by name matching)
+  socket.on('private_call_request', (d) => {
+    // Broadcast to all connected sockets to find the friend
+    socket.broadcast.emit('private_call_request', { fromName: d.fromName, roomId: 'pc_'+socket.id.substr(0,8) });
+  });
+  socket.on('private_call_accepted', (d) => socket.broadcast.emit('private_call_accepted', d));
+  socket.on('pc_offer',   (d) => socket.broadcast.emit('pc_offer', d));
+  socket.on('pc_answer',  (d) => socket.broadcast.emit('pc_answer', d));
+  socket.on('pc_ice',     (d) => socket.broadcast.emit('pc_ice', d));
+  socket.on('pc_message', (d) => socket.broadcast.emit('pc_message', d));
   socket.on('next',          () => handleLeave(socket));
   socket.on('disconnect',    () => handleLeave(socket));
 
