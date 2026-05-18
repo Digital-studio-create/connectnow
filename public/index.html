@@ -318,6 +318,13 @@ button,input,select,textarea{font-family:inherit}
 .psn{font-size:20px;font-weight:800;color:var(--acc2)}
 .psl{font-size:11px;color:var(--sub);margin-top:2px}
 
+/* Filter button active */
+.cb-filter.on{background:linear-gradient(135deg,#f472b6,#a855f7) !important;animation:filterPulse 1.5s infinite}
+@keyframes filterPulse{0%,100%{box-shadow:0 0 10px rgba(244,114,182,.4)}50%{box-shadow:0 0 20px rgba(244,114,182,.7)}}
+
+/* Friend request animation */
+#frModal{animation:fadeUp .3s ease}
+
 @media(max-width:380px){
   .lbox{padding:28px 16px}
   .mrow{gap:8px}.mc{padding:14px 6px}
@@ -572,6 +579,7 @@ button,input,select,textarea{font-family:inherit}
   </div>
 
   <div class="vidarea" id="vidArea">
+    <canvas id="filterCanvas" style="display:none;position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none"></canvas>
     <div class="vidph" id="vidPh">
       <div class="vpa" style="background:linear-gradient(135deg,var(--acc),var(--acc2))" id="vPhAvt">?</div>
       <div class="vpt" id="vPhTxt">Connecting...</div>
@@ -588,8 +596,11 @@ button,input,select,textarea{font-family:inherit}
     <div class="ctrlbar">
       <button class="cb cb-mute" id="muteBtn" onclick="toggleMute()">🎤</button>
       <button class="cb cb-cam" id="camBtn" onclick="toggleCam()">📷</button>
+      <button class="cb cb-flip" onclick="flipCamera()" title="Flip Camera">🔄</button>
+      <button class="cb cb-filter" onclick="toggleFilter()" title="Video Filter">✨</button>
       <button class="cb cb-next" onclick="nextStranger()">⏭️</button>
       <button class="cb cb-msg" onclick="togglePanel()">💬</button>
+      <button class="cb cb-add" onclick="sendFriendReq()" title="Add Friend">👤+</button>
       <button class="cb cb-end" onclick="endChat()">📵</button>
     </div>
   </div>
@@ -610,6 +621,9 @@ button,input,select,textarea{font-family:inherit}
   <!-- Chat panel -->
   <div class="cpanel closed" id="cpanel" style="position:relative">
     <div class="cmsgs" id="cpMsgs"></div>
+    <div id="friendReqSent" style="display:none;text-align:center;padding:8px;font-size:12px;color:var(--acc2)">
+      ✅ Friend request sent!
+    </div>
     <div class="epicker" id="ep1">
       <button class="ep" onclick="em1('😀')">😀</button><button class="ep" onclick="em1('😂')">😂</button>
       <button class="ep" onclick="em1('😍')">😍</button><button class="ep" onclick="em1('🥰')">🥰</button>
@@ -624,6 +638,7 @@ button,input,select,textarea{font-family:inherit}
     </div>
     <div class="cinprow">
       <button class="emojibtn" onclick="toggleEP('ep1')">😊</button>
+      <label class="emojibtn" title="Send Image" style="cursor:pointer">📎<input type="file" accept="image/*" style="display:none" onchange="sendImage(this,'cpMsgs')"></label>
       <input class="cinp" id="cpInp" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendVM()">
       <button class="sendbtn" onclick="sendVM()">➤</button>
     </div>
@@ -1217,6 +1232,134 @@ async function setupRTC(init){
 }
 
 
+
+// ── Camera Flip ────────────────────────────────────────
+let currentFacingMode = 'user';
+async function flipCamera(){
+  if(S.mode==='audio'||!S.localStream){toast('Audio mode mein flip nahi!');return;}
+  currentFacingMode = currentFacingMode==='user'?'environment':'user';
+  const videoTrack = S.localStream.getVideoTracks()[0];
+  if(!videoTrack){toast('Camera not found');return;}
+  try{
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:currentFacingMode,width:{ideal:320},height:{ideal:240},frameRate:{ideal:15}},
+      audio:false
+    });
+    const newVT = newStream.getVideoTracks()[0];
+    const sender = S.pc?.getSenders().find(s=>s.track?.kind==='video');
+    if(sender) await sender.replaceTrack(newVT);
+    S.localStream.removeTrack(videoTrack);
+    S.localStream.addTrack(newVT);
+    videoTrack.stop();
+    const lv=document.getElementById('localVideo');
+    lv.srcObject=S.localStream;
+    lv.style.transform = currentFacingMode==='user'?'scaleX(-1)':'scaleX(1)';
+    toast(currentFacingMode==='user'?'🤳 Front camera':'📷 Back camera');
+  }catch(e){
+    currentFacingMode=currentFacingMode==='user'?'environment':'user';
+    toast('⚠️ Camera flip failed: '+e.message);
+  }
+}
+
+// ── Video Filters ───────────────────────────────────────
+const FILTERS = [
+  {name:'Normal',css:'none'},
+  {name:'B&W',css:'grayscale(100%)'},
+  {name:'Vintage',css:'sepia(80%) contrast(1.1)'},
+  {name:'Vivid',css:'saturate(2) contrast(1.2) brightness(1.1)'},
+  {name:'Dreamy',css:'hue-rotate(30deg) brightness(1.2) blur(0.5px)'},
+  {name:'Neon',css:'hue-rotate(180deg) saturate(3) contrast(1.3)'},
+  {name:'Warm',css:'sepia(30%) saturate(1.5) brightness(1.1)'},
+  {name:'Cool',css:'hue-rotate(200deg) saturate(1.3)'},
+];
+let curFilter = 0;
+
+function toggleFilter(){
+  const btn=document.querySelector('.cb-filter');
+  const lv=document.getElementById('localVideo');
+  curFilter=(curFilter+1)%FILTERS.length;
+  const f=FILTERS[curFilter];
+  lv.style.filter=f.css;
+  if(curFilter===0){
+    btn.classList.remove('on');
+    btn.textContent='✨';
+  } else {
+    btn.classList.add('on');
+    btn.textContent='✨';
+  }
+  toast('Filter: '+f.name);
+}
+
+// ── Friend Request ──────────────────────────────────────
+let pendingFriendRoom = null;
+const myFriends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
+
+function sendFriendReq(){
+  if(!S.roomId){toast('Connect to someone first!');return;}
+  const nm=document.getElementById('chNm')?.textContent||'Stranger';
+  socket.emit('friend_request',{roomId:S.roomId,fromName:S.user?.name||'Anonymous'});
+  toast('👤 Friend request sent to '+nm+'!');
+  document.getElementById('friendReqSent').style.display='block';
+  setTimeout(()=>{document.getElementById('friendReqSent').style.display='none';},3000);
+}
+
+function showFriendModal(fromName){
+  const old=document.getElementById('frModal');
+  if(old)old.remove();
+  const m=document.createElement('div');
+  m.id='frModal';
+  m.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:var(--s1);border:2px solid var(--acc2);border-radius:18px;padding:22px 24px;z-index:500;text-align:center;min-width:280px;box-shadow:0 8px 40px rgba(0,229,160,.2);animation:fadeUp .3s ease';
+  m.innerHTML=`
+    <div style="font-size:32px;margin-bottom:8px">🤝</div>
+    <div style="font-weight:800;font-size:17px;margin-bottom:6px;color:var(--text)">${fromName}</div>
+    <div style="color:var(--sub);font-size:13px;margin-bottom:18px">wants to be your friend!</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button onclick="acceptFriend('${fromName}')" style="padding:11px 22px;background:var(--acc2);border:none;border-radius:11px;color:#000;font-weight:800;font-size:14px;cursor:pointer;transition:all .2s">✅ Accept</button>
+      <button onclick="document.getElementById('frModal').remove()" style="padding:11px 22px;background:var(--s3);border:1px solid var(--bdr);border-radius:11px;color:var(--sub);font-size:14px;cursor:pointer">❌ Decline</button>
+    </div>
+  `;
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('frModal')?.remove(),15000);
+}
+
+function acceptFriend(name){
+  if(!myFriends.includes(name)) myFriends.push(name);
+  localStorage.setItem('cn_friends',JSON.stringify(myFriends));
+  document.getElementById('frModal')?.remove();
+  socket.emit('friend_accepted',{roomId:S.roomId,toName:name,fromName:S.user?.name});
+  toast('🎉 '+name+' added as friend!');
+}
+
+// ── Send Image ──────────────────────────────────────────
+function sendImage(input,cid){
+  const file=input.files[0];
+  if(!file)return;
+  if(file.size>3*1024*1024){toast('⚠️ Max 3MB image!');return;}
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const d=e.target.result;
+    addImgMsg(cid,d,'me');
+    if(S.roomId) socket.emit('image_message',{roomId:S.roomId,imgData:d});
+    toast('📎 Image sent!');
+  };
+  reader.readAsDataURL(file);
+  input.value='';
+}
+
+function addImgMsg(cid,src,type){
+  const c=document.getElementById(cid);if(!c)return;
+  const d=document.createElement('div');
+  d.className='msg '+type;
+  d.style.cssText='padding:4px;max-width:200px;background:transparent';
+  const img=document.createElement('img');
+  img.src=src;
+  img.style.cssText='width:100%;max-width:200px;border-radius:12px;display:block;cursor:pointer;border:2px solid var(--bdr)';
+  img.onclick=()=>window.open(src,'_blank');
+  d.appendChild(img);
+  c.appendChild(d);
+  c.scrollTop=c.scrollHeight;
+}
+
 // ── Controls ───────────────────────────────────────
 function toggleMute(){
   S.muted=!S.muted;
@@ -1317,6 +1460,24 @@ document.addEventListener('keydown',e=>{
     const i=Array.from(bs).indexOf(e.target);
     if(i>0)bs[i-1].focus();
   }
+});
+
+// ── Friend Request Socket Events ───────────────────────
+socket.on('friend_request', d=>{
+  console.log('Friend request from:', d.fromName);
+  showFriendModal(d.fromName || 'Stranger');
+});
+
+socket.on('friend_accepted', d=>{
+  toast('🎉 '+d.fromName+' accepted your friend request!');
+});
+
+// ── Image Message Socket ────────────────────────────────
+socket.on('image_message', d=>{
+  const cid = S.mode==='text'?'tcMsgs':'cpMsgs';
+  addImgMsg(cid, d.imgData, 'them');
+  if(S.mode!=='text' && !S.panelOpen) togglePanel();
+  toast('📎 Image received!');
 });
 
 // Close emoji pickers on outside click
