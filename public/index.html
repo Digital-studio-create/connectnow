@@ -507,10 +507,8 @@ button,input,select,textarea{font-family:inherit}
     </div>
 
     <div class="sec" style="margin-top:14px"><div class="slbl">Recent Chats</div></div>
-    <div class="clist">
-      <div class="ci"><div class="ciavt" style="background:linear-gradient(135deg,#f472b6,#e879f9)">A</div><div style="flex:1;min-width:0"><div class="cinm">Anonymous_4821</div><div class="ciprev">That was fun! 😄</div></div><div style="text-align:right"><div style="font-size:11px;color:var(--sub)">2m</div><div class="cbdg">2</div></div></div>
-      <div class="ci"><div class="ciavt" style="background:linear-gradient(135deg,#34d399,#059669)">B</div><div style="flex:1;min-width:0"><div class="cinm">Anonymous_7732</div><div class="ciprev">Where are you from? 🌍</div></div><div style="font-size:11px;color:var(--sub)">1h</div></div>
-      <div class="ci"><div class="ciavt" style="background:linear-gradient(135deg,#fbbf24,#f59e0b)">C</div><div style="flex:1;min-width:0"><div class="cinm">Anonymous_1156</div><div class="ciprev">Nice talking! 👋</div></div><div style="font-size:11px;color:var(--sub)">3h</div></div>
+    <div class="clist" id="recentChatsList">
+      <!-- Dynamic recent chats loaded here -->
     </div>
   </div>
 
@@ -542,7 +540,7 @@ button,input,select,textarea{font-family:inherit}
 <div class="sc off" id="privateChatScreen">
   <div class="tctop">
     <div style="display:flex;align-items:center;gap:10px">
-      <div class="ib" onclick="go('friendsScreen');loadFriends()" style="font-size:13px">←</div>
+      <div class="ib" onclick="endPrivateCall()" style="font-size:13px">←</div>
       <div class="chavt" id="pcAvt" style="width:36px;height:36px;font-size:15px">?</div>
       <div>
         <div class="chnm" id="pcName">Friend</div>
@@ -550,8 +548,9 @@ button,input,select,textarea{font-family:inherit}
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="cb cb-mute" id="pcMuteBtn" onclick="togglePCMute()" style="width:36px;height:36px;font-size:15px">🎤</button>
-      <button class="cb cb-filter" onclick="togglePCFilter()" style="width:36px;height:36px;font-size:15px">✨</button>
+      <button onclick="startPrivateCall(activeFriendChat,'audio')" style="width:36px;height:36px;border-radius:50%;background:rgba(0,229,160,.2);border:1px solid var(--acc2);color:var(--acc2);font-size:16px;cursor:pointer">🎙️</button>
+      <button onclick="startPrivateCall(activeFriendChat,'video')" style="width:36px;height:36px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:16px;cursor:pointer">📹</button>
+      <button class="cb cb-mute" id="pcMuteBtn" onclick="togglePCMute()" style="width:36px;height:36px;font-size:15px;display:none">🎤</button>
       <button class="cb cb-end" onclick="endPrivateCall()" style="width:36px;height:36px;font-size:15px">📵</button>
     </div>
   </div>
@@ -957,6 +956,7 @@ function enterApp(){
   updateFilterLock();
   go('homeScreen');
   fetchStats();
+  loadRecentChats();
   toast('🎉 Welcome '+name+'!');
 }
 
@@ -1059,6 +1059,9 @@ socket.on('waiting',d=>{
 socket.on('matched',async d=>{
   S.roomId=d.roomId;
   document.getElementById('searching').classList.add('off');
+  // Save to recent
+  const sName = d.stranger?.name||'Anonymous';
+  addToRecent(sName, 'Connected...', true);
   const em=emojis[Math.floor(Math.random()*emojis.length)];
   const sn=d.stranger.name||'Stranger';
   const sc=ctry[d.stranger.country]||'';
@@ -1086,6 +1089,9 @@ socket.on('matched',async d=>{
 });
 
 socket.on('stranger_left',()=>{
+  // Add to recent chats
+  const strName = document.getElementById('chNm')?.textContent || document.getElementById('tcNm')?.textContent;
+  if(strName && strName !== 'Stranger') addToRecent(strName, 'Chat ended', true);
   toast('👋 Stranger left');
   stopTimer();
   if(S.pc){S.pc.close();S.pc=null;}
@@ -1318,6 +1324,8 @@ async function flipCamera(){
     const lv=document.getElementById('localVideo');
     lv.srcObject=S.localStream;
     lv.style.transform = currentFacingMode==='user'?'scaleX(-1)':'scaleX(1)';
+    // Also update CSS class for back camera
+    lv.classList.toggle('back-cam', currentFacingMode==='environment');
     toast(currentFacingMode==='user'?'🤳 Front camera':'📷 Back camera');
   }catch(e){
     currentFacingMode=currentFacingMode==='user'?'environment':'user';
@@ -1340,18 +1348,18 @@ let curFilter = 0;
 
 function toggleFilter(){
   const btn=document.getElementById('filterBtn')||document.querySelector('.cb-filter');
-  // Apply filter ONLY to local video display (CSS only - not transmitted)
-  const lv=document.getElementById('localVideo');
-  const pcLv=document.getElementById('pcLocalVideo');
   curFilter=(curFilter+1)%FILTERS.length;
   const f=FILTERS[curFilter];
-  if(lv) lv.style.filter=f.css;
-  if(pcLv) pcLv.style.filter=f.css;
+  // Apply to ALL local video elements
+  ['localVideo','pcLocalVideo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.filter=f.css;
+  });
   if(btn){
-    if(curFilter===0){ btn.classList.remove('on'); }
-    else { btn.classList.add('on'); }
+    if(curFilter===0){ btn.classList.remove('on'); btn.textContent='✨'; }
+    else { btn.classList.add('on'); btn.textContent='✨'; }
   }
-  toast('Filter: '+f.name+' (only you see this)');
+  toast('Filter: '+f.name);
 }
 
 // ── Friend Request ──────────────────────────────────────
@@ -1392,9 +1400,10 @@ function acceptFriend(name){
   document.getElementById('frModal')?.remove();
   const myName = S.user?.name || 'Anonymous';
   socket.emit('friend_accepted',{roomId:S.roomId,toName:name,fromName:myName});
+  addToRecent(name, 'New friend! 🤝', false);
   toast('🎉 '+name+' added as friend!');
-  // Auto start private chat
-  setTimeout(()=>startPrivateChat(name), 1000);
+  // Auto open chat
+  setTimeout(()=>openFriendChat(name), 800);
 }
 
 // ── Send Image ──────────────────────────────────────────
@@ -1469,7 +1478,7 @@ function startPrivateChat(name){
   document.getElementById('pcConnTxt').textContent = 'Calling ' + name + '...';
 }
 
-async function setupPrivateCall(init, roomId){
+async function setupPrivateCall(init, roomId, withVideo=true){
   pcRoomId = roomId;
   
   // Private call ke liye bhi aapka secure Metered server set kar diya hai
@@ -1501,13 +1510,12 @@ async function setupPrivateCall(init, roomId){
   pcPc = new RTCPeerConnection({iceServers, iceCandidatePoolSize:10});
   
   try{
-    pcStream = await navigator.mediaDevices.getUserMedia({
-      audio:{echoCancellation:true,noiseSuppression:true},
-      video:{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15},facingMode:'user'}
-    });
+    const pcConstraints = withVideo
+      ? {audio:{echoCancellation:true,noiseSuppression:true}, video:{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15},facingMode:'user'}}
+      : {audio:{echoCancellation:true,noiseSuppression:true}, video:false};
+    pcStream = await navigator.mediaDevices.getUserMedia(pcConstraints);
     const lv = document.getElementById('pcLocalVideo');
-    lv.srcObject = pcStream;
-    lv.style.display = 'block';
+    if(withVideo && lv){ lv.srcObject = pcStream; lv.style.display = 'block'; }
     pcStream.getTracks().forEach(t => pcPc.addTrack(t, pcStream));
   }catch(e){ toast('⚠️ Camera permission needed!'); }
   
@@ -1559,7 +1567,11 @@ function sendPCMsg(){
   const i = document.getElementById('pcInp');
   const t = i.value.trim(); if(!t) return;
   addMsg('pcMsgs', t, 'me');
-  socket.emit('pc_message', {roomId:pcRoomId, text:t});
+  socket.emit('pc_message', {roomId:pcRoomId, text:t, toName:activeFriendChat, fromName:S.user?.name});
+  if(activeFriendChat){
+    saveMsgToHistory(activeFriendChat, t, 'me');
+    addToRecent(activeFriendChat, 'You: '+t, true);
+  }
   i.value = '';
 }
 
@@ -1613,12 +1625,14 @@ function endPrivateCall(){
   if(pcPc){ pcPc.close(); pcPc = null; }
   if(pcStream){ pcStream.getTracks().forEach(t=>t.stop()); pcStream = null; }
   const rv = document.getElementById('pcRemoteVideo');
-  rv.srcObject = null; rv.style.display = 'none';
+  if(rv){ rv.srcObject = null; rv.style.display = 'none'; }
   const lv = document.getElementById('pcLocalVideo');
-  lv.srcObject = null; lv.style.display = 'none';
-  document.getElementById('pcVidPh').style.display = 'flex';
-  go('friendsScreen');
-  loadFriends();
+  if(lv){ lv.srcObject = null; lv.style.display = 'none'; }
+  const ph = document.getElementById('pcVidPh');
+  if(ph) ph.style.display = 'flex';
+  pcRoomId = null;
+  go('homeScreen');
+  loadRecentChats();
 }
 
 function reportUser(){toast('⚑ User reported!');endChat();}
@@ -1670,6 +1684,114 @@ function showFriendsSection(){
   go('friendsScreen');
 }
 
+// ── Recent Chats System ────────────────────────────────
+let recentChats = JSON.parse(localStorage.getItem('cn_recent')||'[]');
+
+function addToRecent(name, lastMsg, isRead){
+  const existing = recentChats.findIndex(r=>r.name===name);
+  const item = {name, lastMsg:lastMsg||'', time:Date.now(), unread:isRead?0:1};
+  if(existing>=0){ 
+    item.unread = isRead ? 0 : (recentChats[existing].unread||0)+1;
+    recentChats.splice(existing,1); 
+  }
+  recentChats.unshift(item);
+  if(recentChats.length>20) recentChats=recentChats.slice(0,20);
+  localStorage.setItem('cn_recent',JSON.stringify(recentChats));
+  loadRecentChats();
+}
+
+function loadRecentChats(){
+  const list = document.getElementById('recentChatsList');
+  if(!list) return;
+  recentChats = JSON.parse(localStorage.getItem('cn_recent')||'[]');
+  
+  if(recentChats.length===0){
+    list.innerHTML='<div style="text-align:center;padding:20px;color:var(--sub);font-size:13px">No recent chats yet. Find a stranger!</div>';
+    return;
+  }
+
+  const colors=['linear-gradient(135deg,#f472b6,#e879f9)','linear-gradient(135deg,#34d399,#059669)','linear-gradient(135deg,#fbbf24,#f59e0b)','linear-gradient(135deg,#60a5fa,#3b82f6)','linear-gradient(135deg,var(--acc),var(--acc2))'];
+  
+  list.innerHTML = recentChats.map((r,i)=>{
+    const t = Date.now()-r.time;
+    const timeStr = t<60000?'now':t<3600000?Math.floor(t/60000)+'m':t<86400000?Math.floor(t/3600000)+'h':Math.floor(t/86400000)+'d';
+    const col = colors[i%colors.length];
+    const isFriend = myFriends.includes(r.name);
+    return `<div class="ci" onclick="openFriendChat('${r.name}')">
+      <div class="ciavt" style="background:${col};font-size:15px;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800">${r.name[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="cinm">${r.name}</div>
+          ${isFriend?'<span style="font-size:10px;background:var(--acc2);color:#000;padding:1px 6px;border-radius:8px;font-weight:700">Friend</span>':''}
+        </div>
+        <div class="ciprev">${r.lastMsg||'Tap to chat'}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:11px;color:var(--sub)">${timeStr}</div>
+        ${r.unread>0?`<div class="cbdg">${r.unread}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Friend Chat (Private Text + Video) ─────────────────
+let activeFriendChat = null;
+let friendChatHistory = {};
+
+function openFriendChat(name){
+  activeFriendChat = name;
+  // Mark as read
+  const idx = recentChats.findIndex(r=>r.name===name);
+  if(idx>=0){ recentChats[idx].unread=0; localStorage.setItem('cn_recent',JSON.stringify(recentChats)); }
+  
+  document.getElementById('pcName').textContent = name;
+  document.getElementById('pcAvt').textContent = name[0].toUpperCase();
+  
+  // Load chat history
+  const history = JSON.parse(localStorage.getItem('cn_chat_'+name)||'[]');
+  const msgs = document.getElementById('pcMsgs');
+  msgs.innerHTML = '<div class="sysmsg">Chat with '+name+'</div>';
+  history.forEach(m=>{
+    if(m.type==='img') addImgMsg('pcMsgs',m.text,m.from);
+    else addMsg('pcMsgs',m.text,m.from);
+  });
+  
+  go('privateChatScreen');
+  
+  // Notify friend that we opened chat
+  socket.emit('private_call_request',{toName:name,fromName:S.user?.name||'Anonymous',chatOnly:true});
+}
+
+function startPrivateCall(name, callType='video'){
+  activeFriendChat = name;
+  document.getElementById('pcName').textContent = name;
+  document.getElementById('pcAvt').textContent = name[0].toUpperCase();
+  document.getElementById('pcMsgs').innerHTML='<div class="sysmsg">'+callType+' call with '+name+'</div>';
+  
+  go('privateChatScreen');
+  document.getElementById('pcConnTxt').textContent = 'Calling '+name+'...';
+  
+  const roomId = 'pc_'+socket.id.substr(0,8)+'_'+Date.now();
+  socket.emit('private_call_request',{toName:name,fromName:S.user?.name||'Anonymous',roomId,callType});
+  
+  // Show mute button during call
+  const muteB = document.getElementById('pcMuteBtn');
+  if(muteB) muteB.style.display = 'flex';
+  if(callType==='video'){
+    setupPrivateCall(true, roomId, true);
+  } else {
+    setupPrivateCall(true, roomId, false);
+  }
+}
+
+function saveMsgToHistory(name, text, from){
+  const key = 'cn_chat_'+name;
+  const history = JSON.parse(localStorage.getItem(key)||'[]');
+  history.push({text,from,time:Date.now()});
+  if(history.length>100) history.shift();
+  localStorage.setItem(key,JSON.stringify(history));
+}
+
 function loadFriends(){
   const friends = JSON.parse(localStorage.getItem('cn_friends')||'[]');
   const list = document.getElementById('friendsList');
@@ -1689,17 +1811,23 @@ function loadFriends(){
   items.forEach(i => i.remove());
   
   friends.forEach(name => {
+    const colors = ['linear-gradient(135deg,#f472b6,#e879f9)','linear-gradient(135deg,#34d399,#059669)','linear-gradient(135deg,#fbbf24,#f59e0b)','linear-gradient(135deg,#60a5fa,#3b82f6)','linear-gradient(135deg,var(--acc),var(--acc2))'];
     const div = document.createElement('div');
-    div.className = 'friend-item ci';
+    div.className = 'friend-item';
+    div.style.cssText = 'padding:14px 16px;border-bottom:1px solid var(--bdr)';
     div.innerHTML = `
-      <div class="ciavt" style="background:linear-gradient(135deg,var(--acc),var(--acc2));font-size:16px">${name[0].toUpperCase()}</div>
-      <div style="flex:1;min-width:0">
-        <div class="cinm">${name}</div>
-        <div class="ciprev">Tap to start private chat</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+        <div class="ciavt" style="background:${colors[Math.floor(Math.random()*colors.length)]};font-size:16px;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800">${name[0].toUpperCase()}</div>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px">${name}</div>
+          <div style="font-size:12px;color:var(--sub)">Friend</div>
+        </div>
+        <button onclick="removeFriend('${name}')" style="background:transparent;border:none;color:var(--sub);font-size:18px;cursor:pointer;padding:4px">✕</button>
       </div>
       <div style="display:flex;gap:8px">
-        <button onclick="startPrivateChat('${name}')" style="padding:8px 14px;background:var(--acc);border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer">💬 Chat</button>
-        <button onclick="removeFriend('${name}')" style="padding:8px 10px;background:var(--s3);border:1px solid var(--bdr);border-radius:10px;color:var(--sub);font-size:12px;cursor:pointer">✕</button>
+        <button onclick="openFriendChat('${name}')" style="flex:1;padding:9px 6px;background:var(--s2);border:1px solid var(--bdr);border-radius:10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s">💬 Chat</button>
+        <button onclick="startPrivateCall('${name}','audio')" style="flex:1;padding:9px 6px;background:var(--s2);border:1px solid var(--bdr);border-radius:10px;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s">🎙️ Audio</button>
+        <button onclick="startPrivateCall('${name}','video')" style="flex:1;padding:9px 6px;background:linear-gradient(135deg,var(--acc),#9b6cff);border:none;border-radius:10px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s">📹 Video</button>
       </div>
     `;
     list.appendChild(div);
@@ -1788,6 +1916,10 @@ socket.on('pc_ice', async d => {
 
 socket.on('pc_message', d => {
   addMsg('pcMsgs', d.text, 'them');
+  if(d.fromName){
+    saveMsgToHistory(d.fromName, d.text, 'them');
+    addToRecent(d.fromName, d.text, activeFriendChat===d.fromName);
+  }
 });
 
 // Close emoji pickers on outside click
