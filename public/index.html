@@ -243,6 +243,9 @@ button,input,select,textarea{font-family:inherit}
 
 .ctrlbar{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(to top,rgba(0,0,0,.9),transparent);display:flex;align-items:center;justify-content:center;gap:8px;z-index:5;flex-wrap:wrap}
 .ctrlbar-right{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:6}
+.ctrlbar-right .cb{background:rgba(20,20,30,.85);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(10px);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,.5)}
+.ctrlbar-right .cb:hover{background:var(--acc);border-color:var(--acc)}
+.ctrlbar-right .cb svg{stroke:#fff}
 .cb{width:50px;height:50px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(0,0,0,.4);flex-shrink:0;color:#fff}
 .cb svg{pointer-events:none}
 .cb-mute{background:rgba(255,255,255,.12);backdrop-filter:blur(8px)}
@@ -1061,21 +1064,67 @@ function applyUserUI(p){
 }
 
 function goHome(){
+  // Stop ALL active streams and connections
+  if(S.pc){S.pc.close();S.pc=null;}
+  if(S.localStream){
+    S.localStream.getTracks().forEach(t=>t.stop());
+    S.localStream=null;
+  }
+  if(pcPc){pcPc.close();pcPc=null;}
+  if(pcStream){
+    pcStream.getTracks().forEach(t=>t.stop());
+    pcStream=null;
+  }
+  
+  // Clear all video elements
+  ['localVideo','remoteVideo','pcLocalVideo','pcRemoteVideo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.srcObject=null;el.style.display='none';}
+  });
+  
+  // Close call area
+  const ca=document.getElementById('pcCallArea');
+  if(ca) ca.style.display='none';
+  
+  // Emit disconnect
+  if(S.roomId){socket.emit('next');S.roomId=null;}
+  if(pcRoomId){socket.emit('next');pcRoomId=null;}
+  
   go('homeScreen');
   loadRecentChats();
-  // Update nav active state
+  
+  // Re-register online
+  if(S.user){
+    setTimeout(()=>{
+      socket.emit('register',{name:S.user.name,gender:S.user.gender,country:S.user.country,isPremium:S.isPremium,mode:S.mode});
+    },400);
+  }
+  
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
   document.getElementById('navHome')?.classList.add('on');
+  console.log('✅ Home - all streams stopped');
 }
 
 function logout(){
+  // Stop ALL streams before logout
+  if(S.localStream){S.localStream.getTracks().forEach(t=>t.stop());S.localStream=null;}
+  if(pcStream){pcStream.getTracks().forEach(t=>t.stop());pcStream=null;}
+  if(S.pc){S.pc.close();S.pc=null;}
+  if(pcPc){pcPc.close();pcPc=null;}
+  ['localVideo','remoteVideo','pcLocalVideo','pcRemoteVideo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.srcObject=null;el.style.display='none';}
+  });
+  const ca=document.getElementById('pcCallArea');
+  if(ca) ca.style.display='none';
+  
   auth.signOut().catch(()=>{});
   localStorage.removeItem('cn_profile');
-  S.user=null; S.isPremium=false;
-  cleanupChat();
+  S.user=null;S.isPremium=false;S.roomId=null;pcRoomId=null;
   document.getElementById('profModal').classList.add('off');
   go('loginScreen');
-  toast('👋 Logged out successfully');
+  toast('Logged out');
+  console.log('✅ Logged out - all streams stopped');
 }
 
 // ── Mode ───────────────────────────────────────────
@@ -1625,12 +1674,21 @@ async function setupPrivateCall(init, roomId, withVideo=true){
   pcPc = new RTCPeerConnection({iceServers, iceCandidatePoolSize:10});
   
   try{
+    // AUDIO CALL = camera OFF, VIDEO CALL = camera ON
     const pcConstraints = withVideo
       ? {audio:{echoCancellation:true,noiseSuppression:true}, video:{width:{ideal:320},height:{ideal:240},frameRate:{ideal:15},facingMode:'user'}}
       : {audio:{echoCancellation:true,noiseSuppression:true}, video:false};
+    
     pcStream = await navigator.mediaDevices.getUserMedia(pcConstraints);
+    console.log('PC stream tracks:', pcStream.getTracks().map(t=>t.kind));
+    
     const lv = document.getElementById('pcLocalVideo');
-    if(withVideo && lv){ lv.srcObject = pcStream; lv.style.display = 'block'; }
+    if(withVideo && lv){ 
+      lv.srcObject = pcStream; 
+      lv.style.display = 'block'; 
+    } else if(lv){
+      lv.style.display = 'none'; // Audio call - hide local video
+    }
     pcStream.getTracks().forEach(t => pcPc.addTrack(t, pcStream));
   }catch(e){ toast('⚠️ Camera permission needed!'); }
   
@@ -1740,54 +1798,126 @@ function endChat(){cleanupChat();go('homeScreen');toast('Chat ended');}
 
 function cleanupChat(){
   socket.emit('next');
-  // Re-register user so they appear online again
+  
+  // Re-register user online
   if(S.user){
     setTimeout(()=>{
       socket.emit('register',{name:S.user.name,gender:S.user.gender,country:S.user.country,isPremium:S.isPremium,mode:S.mode});
     }, 300);
   }
+  
   stopTimer();
   S.panelOpen=false;
-  document.getElementById('cpanel').classList.add('closed');
-  document.getElementById('cpanel').classList.remove('open');
+  
+  const cpanel=document.getElementById('cpanel');
+  if(cpanel){cpanel.classList.add('closed');cpanel.classList.remove('open');}
+  
+  // STOP all tracks - this turns off camera light
   if(S.pc){S.pc.close();S.pc=null;}
-  if(S.localStream){S.localStream.getTracks().forEach(t=>t.stop());S.localStream=null;}
-  const rv=document.getElementById('remoteVideo');rv.style.display='none';rv.srcObject=null;rv.load();
-  const lv=document.getElementById('localVideo');lv.style.display='none';lv.srcObject=null;
-  document.getElementById('selfPh').style.display='flex';
-  document.getElementById('vidPh').style.display='flex';
-  document.getElementById('vPhTxt').textContent='Connecting...';
-  document.getElementById('ep1').classList.remove('show');
+  if(S.localStream){
+    S.localStream.getTracks().forEach(t=>{
+      t.stop();
+      console.log('Camera/mic stopped:',t.kind,t.label);
+    });
+    S.localStream=null;
+  }
+  
+  // Clear video elements
+  const rv=document.getElementById('remoteVideo');
+  if(rv){rv.srcObject=null;rv.style.display='none';try{rv.load();}catch(e){}}
+  const lv=document.getElementById('localVideo');
+  if(lv){lv.srcObject=null;lv.style.display='none';}
+  
+  const selfPh=document.getElementById('selfPh');
+  if(selfPh) selfPh.style.display='flex';
+  const vidPh=document.getElementById('vidPh');
+  if(vidPh) vidPh.style.display='flex';
+  const vPhTxt=document.getElementById('vPhTxt');
+  if(vPhTxt) vPhTxt.textContent='Connecting...';
+  
+  document.getElementById('ep1')?.classList.remove('show');
   S.roomId=null;
+  console.log('✅ Chat cleaned up - camera stopped');
+}
+
+// STOP all media tracks - called everywhere
+function stopAllMediaTracks(){
+  // Stop private call stream
+  if(pcStream){ 
+    pcStream.getTracks().forEach(t=>{t.stop();console.log('Stopped PC track:',t.kind);}); 
+    pcStream=null; 
+  }
+  // Stop main chat stream
+  if(S.localStream){
+    S.localStream.getTracks().forEach(t=>{t.stop();console.log('Stopped main track:',t.kind);});
+    S.localStream=null;
+  }
+  // Clear all video elements
+  ['localVideo','remoteVideo','pcLocalVideo','pcRemoteVideo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.srcObject=null;el.style.display='none';}
+  });
 }
 
 // End call but stay in chat
 function endCallKeepChat(){
   if(pcCallTimerInt){clearInterval(pcCallTimerInt);pcCallTimerInt=null;}
-  if(pcPc){ pcPc.close(); pcPc = null; }
-  if(pcStream){ pcStream.getTracks().forEach(t=>t.stop()); pcStream = null; }
+  if(pcPc){ pcPc.close(); pcPc=null; }
+  
+  // Stop ONLY private call stream (not main chat)
+  if(pcStream){ 
+    pcStream.getTracks().forEach(t=>{t.stop();});
+    pcStream=null; 
+  }
+  
   const rv=document.getElementById('pcRemoteVideo');
   if(rv){rv.srcObject=null;rv.style.display='none';}
   const lv=document.getElementById('pcLocalVideo');
   if(lv){lv.srcObject=null;lv.style.display='none';}
   const ph=document.getElementById('pcVidPh');
   if(ph)ph.style.display='flex';
-  // HIDE fullscreen call, go back to chat
+  
+  // Hide fullscreen call area
   const ca=document.getElementById('pcCallArea');
   if(ca) ca.style.display='none';
   pcRoomId=null;
-  // Add ended message to chat
+  
+  // Add ended message
   const dur=document.getElementById('pcCallTimer')?.textContent||'';
-  addMsg('pcMsgs','📵 Call ended'+(dur&&dur!=='Calling...'?' ('+dur+')':''),'me');
+  addMsg('pcMsgs','Call ended'+(dur&&dur!=='Calling...'&&dur!=='Connecting...'?' ('+dur+')':''),'me');
   toast('Call ended');
-  // Make sure we are on private chat screen
   go('privateChatScreen');
 }
 
 function endPrivateCall(){
   endCallKeepChat();
+  // Disconnect from any main chat room too
+  if(S.roomId){
+    socket.emit('next');
+    S.roomId=null;
+  }
+  // Stop main stream
+  if(S.localStream){
+    S.localStream.getTracks().forEach(t=>{t.stop();});
+    S.localStream=null;
+  }
+  if(S.pc){S.pc.close();S.pc=null;}
+  
+  // Clear all video elements
+  ['localVideo','remoteVideo'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.srcObject=null;el.style.display='none';}
+  });
+  
   go('homeScreen');
   loadRecentChats();
+  
+  // Re-register as online
+  if(S.user){
+    setTimeout(()=>{
+      socket.emit('register',{name:S.user.name,gender:S.user.gender,country:S.user.country,isPremium:S.isPremium,mode:S.mode});
+    },300);
+  }
 }
 
 // Start quick call from chat header
@@ -1809,16 +1939,22 @@ function startQuickCall(callType){
     if(el) el.textContent = id==='pcCallAvt' ? name[0].toUpperCase() : name;
   });
 
-  // Video call: show camera button, hide audio viz
+  // AUDIO = hide cam btn + show audio viz + keep dark BG
+  // VIDEO = show cam btn + hide audio viz
   const camBtn=document.getElementById('pcCamBtn');
   if(camBtn) camBtn.style.display=callType==='video'?'flex':'none';
   
   const viz=document.getElementById('pcAudioViz');
   if(viz) viz.style.display=callType==='audio'?'flex':'none';
   
-  // Audio call: keep background, hide video placeholder avatar for now
+  // Always show placeholder bg until remote video arrives
   const ph=document.getElementById('pcVidPh');
-  if(ph) ph.style.display='flex'; // always show placeholder until connected
+  if(ph){
+    ph.style.display='flex';
+    // Audio call - hide remote video placeholder too
+    const rv=document.getElementById('pcRemoteVideo');
+    if(rv && callType==='audio') rv.style.display='none';
+  }
   
   document.getElementById('pcConnTxt').textContent='Calling '+name+'...';
   document.getElementById('pcCallTimer').textContent='Calling...';
