@@ -155,7 +155,7 @@ button,input,select,textarea{font-family:inherit}
 .fcsel{width:100%;background:var(--s2);border:1px solid var(--bdr);color:var(--text);border-radius:8px;padding:8px 10px;font-size:12px;outline:none;-webkit-appearance:none}
 
 .find-wrap{padding:0 14px 14px}
-.btn-find{width:100%;padding:17px;border-radius:16px;background:linear-gradient(135deg,var(--acc) 0%,#9b6cff 50%,var(--acc2) 100%);background-size:200%;color:#fff;font-size:17px;font-weight:800;border:none;cursor:pointer;transition:all .3s;animation:gs 4s ease infinite;box-shadow:0 8px 30px rgba(108,71,255,.35);letter-spacing:.3px}
+.btn-find{width:100%;padding:17px;border-radius:16px;background:linear-gradient(135deg,var(--acc) 0%,#9b6cff 50%,var(--acc2) 100%);background-size:200%;color:#fff;font-size:16px;font-weight:700;border:none;cursor:pointer;transition:all .3s;animation:gs 4s ease infinite;box-shadow:0 8px 30px rgba(108,71,255,.35);letter-spacing:1.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px}
 @keyframes gs{0%{background-position:0%}50%{background-position:100%}100%{background-position:0%}}
 .btn-find:hover{transform:translateY(-2px);box-shadow:0 14px 40px rgba(108,71,255,.5)}
 .btn-find:active{transform:scale(.98)}
@@ -244,6 +244,7 @@ button,input,select,textarea{font-family:inherit}
 .ctrlbar{position:absolute;bottom:0;left:0;right:0;padding:10px 14px;background:linear-gradient(to top,rgba(0,0,0,.9),transparent);display:flex;align-items:center;justify-content:center;gap:8px;z-index:5;flex-wrap:wrap}
 .ctrlbar-right{position:absolute;right:12px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:6}
 .cb{width:50px;height:50px;border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;font-size:19px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(0,0,0,.4);flex-shrink:0;color:#fff}
+.cb svg{pointer-events:none}
 .cb-mute{background:rgba(255,255,255,.12);backdrop-filter:blur(8px)}
 .cb-mute.on{background:var(--acc3)}
 .cb-cam{background:rgba(255,255,255,.12);backdrop-filter:blur(8px)}
@@ -284,6 +285,7 @@ button,input,select,textarea{font-family:inherit}
 .emojibtn:hover{transform:scale(1.2)}
 .sendbtn{width:38px;height:38px;background:var(--acc);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:all .2s;flex-shrink:0;color:#fff;flex-shrink:0}
 .sendbtn:hover{background:#9b6cff}
+.sendbtn svg{pointer-events:none}
 
 /* Emoji picker */
 .epicker{background:var(--s2);border:1px solid var(--bdr);border-radius:14px;padding:10px;flex-wrap:wrap;gap:4px;position:absolute;bottom:62px;left:10px;z-index:20;animation:fadeUp .2s;display:none;width:280px}
@@ -319,7 +321,8 @@ button,input,select,textarea{font-family:inherit}
 .psl{font-size:11px;color:var(--sub);margin-top:2px}
 
 /* Filter button active */
-.cb-filter.on{background:linear-gradient(135deg,#f472b6,#a855f7) !important;animation:filterPulse 1.5s infinite}
+.cb-filter.on{background:linear-gradient(135deg,#f472b6,#a855f7) !important}
+.cb-filter.on svg{filter:drop-shadow(0 0 6px rgba(244,114,182,.8))}
 @keyframes filterPulse{0%,100%{box-shadow:0 0 10px rgba(244,114,182,.4)}50%{box-shadow:0 0 20px rgba(244,114,182,.7)}}
 
 /* Friend request animation */
@@ -451,9 +454,9 @@ button,input,select,textarea{font-family:inherit}
       </div>
     </div>
     <div style="display:flex;gap:8px">
-      <div class="ib" onclick="openProf()">👤</div>
-      <div class="ib" onclick="showPrem()">⭐</div>
-      <div class="ib" onclick="logout()">🚪</div>
+      <div class="ib" onclick="openProf()" title="Profile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+      <div class="ib" onclick="showPrem()" title="Premium"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div>
+      <div class="ib" onclick="logout()" title="Logout"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
     </div>
   </div>
 
@@ -467,9 +470,18 @@ button,input,select,textarea{font-family:inherit}
     <div class="sec" style="margin-top:14px">
       <div class="slbl">Chat Mode</div>
       <div class="mrow">
-        <div class="mc on" id="mV" onclick="setMode('video')"><div class="mic">📹</div><div class="mnm">Video</div><div class="mds">Face to face</div></div>
-        <div class="mc" id="mA" onclick="setMode('audio')"><div class="mic">🎙️</div><div class="mnm">Audio</div><div class="mds">Voice only</div></div>
-        <div class="mc" id="mT" onclick="setMode('text')"><div class="mic">💬</div><div class="mnm">Text</div><div class="mds">Anonymous</div></div>
+        <div class="mc on" id="mV" onclick="setMode('video')">
+          <div class="mic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></div>
+          <div class="mnm">Video</div><div class="mds">Face to face</div>
+        </div>
+        <div class="mc" id="mA" onclick="setMode('audio')">
+          <div class="mic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
+          <div class="mnm">Audio</div><div class="mds">Voice only</div>
+        </div>
+        <div class="mc" id="mT" onclick="setMode('text')">
+          <div class="mic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="mnm">Text</div><div class="mds">Anonymous</div>
+        </div>
       </div>
     </div>
 
@@ -497,7 +509,10 @@ button,input,select,textarea{font-family:inherit}
     </div>
 
     <div class="find-wrap">
-      <button class="btn-find" onclick="findStranger()">🔀 &nbsp; FIND A STRANGER</button>
+      <button class="btn-find" onclick="findStranger()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Find a Stranger
+      </button>
     </div>
 
     <div class="pcta" id="pCTA" onclick="showPrem()">
@@ -513,10 +528,22 @@ button,input,select,textarea{font-family:inherit}
   </div>
 
   <div class="bnav">
-    <div class="ni on"><div class="nic">🏠</div>Home</div>
-    <div class="ni" onclick="showFriendsSection()"><div class="nic">👥</div>Friends</div>
-    <div class="ni" onclick="openProf()"><div class="nic">👤</div>Profile</div>
-    <div class="ni" onclick="showPrem()"><div class="nic">⭐</div>Premium</div>
+    <div class="ni on" id="navHome" onclick="goHome()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </div>
+    <div class="ni" id="navFriends" onclick="showFriendsSection()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Friends
+    </div>
+    <div class="ni" id="navProfile" onclick="openProf()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Profile
+    </div>
+    <div class="ni" id="navPremium" onclick="showPrem()">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Premium
+    </div>
   </div>
 </div>
 
@@ -553,38 +580,53 @@ button,input,select,textarea{font-family:inherit}
     </div>
     <!-- Call buttons top right - like messenger -->
     <div style="display:flex;gap:6px">
-      <button id="pcAudioCallBtn" onclick="startQuickCall('audio')" title="Audio Call" style="width:36px;height:36px;border-radius:50%;background:rgba(0,229,160,.15);border:1px solid rgba(0,229,160,.3);color:var(--acc2);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s">🎙️</button>
-      <button id="pcVideoCallBtn" onclick="startQuickCall('video')" title="Video Call" style="width:36px;height:36px;border-radius:50%;background:rgba(108,71,255,.15);border:1px solid rgba(108,71,255,.3);color:var(--acc);font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s">📹</button>
+      <button id="pcAudioCallBtn" onclick="startQuickCall('audio')" title="Audio Call" style="width:36px;height:36px;border-radius:50%;background:rgba(0,229,160,.15);border:1px solid rgba(0,229,160,.3);color:var(--acc2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.25 7.76 15.57 6.06 13.87A19.79 19.79 0 0 1 3 5.22 2 2 0 0 1 4.99 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L9.07 9.91a16 16 0 0 0 6.02 6.02l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></button>
+      <button id="pcVideoCallBtn" onclick="startQuickCall('video')" title="Video Call" style="width:36px;height:36px;border-radius:50%;background:rgba(108,71,255,.15);border:1px solid rgba(108,71,255,.3);color:var(--acc);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
     </div>
   </div>
 
-  <!-- CALL UI - Hidden by default, shows during call -->
-  <div id="pcCallArea" style="display:none;position:relative;background:#000;overflow:hidden" >
-    <!-- Remote video -->
-    <video id="pcRemoteVideo" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0"></video>
-    <!-- Call placeholder -->
-    <div id="pcVidPh" style="width:100%;height:100%;background:radial-gradient(ellipse,#1a1a2e,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px">
-      <div id="pcCallAvt" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;animation:audioPulse 2s infinite">?</div>
-      <div id="pcCallName" style="font-weight:700;font-size:18px">Friend</div>
-      <div id="pcConnTxt" style="color:var(--sub);font-size:13px;animation:blink 1.5s infinite">Calling...</div>
-      <!-- Audio visualizer for audio calls -->
-      <div id="pcAudioViz" style="display:none;align-items:center;gap:4px;height:40px">
-        <div style="width:4px;background:var(--acc);border-radius:2px;animation:va .8s ease-in-out infinite;height:14px"></div>
-        <div style="width:4px;background:var(--acc);border-radius:2px;animation:va .8s ease-in-out infinite .1s;height:28px"></div>
-        <div style="width:4px;background:var(--acc);border-radius:2px;animation:va .8s ease-in-out infinite .2s;height:38px"></div>
-        <div style="width:4px;background:var(--acc);border-radius:2px;animation:va .8s ease-in-out infinite .3s;height:24px"></div>
-        <div style="width:4px;background:var(--acc);border-radius:2px;animation:va .8s ease-in-out infinite .4s;height:34px"></div>
-        <div style="width:4px;background:var(--acc);border-radius:2px;animation:va .8s ease-in-out infinite .5s;height:18px"></div>
+  <!-- CALL UI - FULLSCREEN OVERLAY -->
+  <div id="pcCallArea" style="display:none;position:fixed;inset:0;background:#000;z-index:200;flex-direction:column">
+    <!-- Remote video FULLSCREEN -->
+    <video id="pcRemoteVideo" autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none"></video>
+    <!-- Audio mode background -->
+    <div id="pcVidPh" style="position:absolute;inset:0;background:radial-gradient(ellipse at center,#1e1e35,#000);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+      <div id="pcCallAvt" style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--acc2));display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;animation:audioPulse 2s infinite">?</div>
+      <div id="pcCallName" style="font-weight:800;font-size:20px;color:#fff">Friend</div>
+      <div id="pcConnTxt" style="color:rgba(255,255,255,.6);font-size:14px;animation:blink 1.5s infinite">Calling...</div>
+      <div id="pcAudioViz" style="display:none;align-items:center;gap:5px;height:44px">
+        <div style="width:4px;background:var(--acc2);border-radius:2px;animation:va .8s ease-in-out infinite;height:14px"></div>
+        <div style="width:4px;background:var(--acc2);border-radius:2px;animation:va .8s ease-in-out infinite .1s;height:28px"></div>
+        <div style="width:4px;background:var(--acc2);border-radius:2px;animation:va .8s ease-in-out infinite .2s;height:40px"></div>
+        <div style="width:4px;background:var(--acc2);border-radius:2px;animation:va .8s ease-in-out infinite .3s;height:24px"></div>
+        <div style="width:4px;background:var(--acc2);border-radius:2px;animation:va .8s ease-in-out infinite .4s;height:36px"></div>
+        <div style="width:4px;background:var(--acc2);border-radius:2px;animation:va .8s ease-in-out infinite .5s;height:18px"></div>
       </div>
     </div>
-    <!-- Self video small -->
-    <video id="pcLocalVideo" autoplay playsinline muted style="position:absolute;bottom:70px;right:10px;width:80px;height:107px;object-fit:cover;border-radius:12px;border:2px solid var(--acc);transform:scaleX(-1);display:none;z-index:5"></video>
-    <!-- Call controls overlay -->
-    <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 20px;background:linear-gradient(to top,rgba(0,0,0,.9),transparent);display:flex;align-items:center;justify-content:center;gap:14px;z-index:5">
-      <button id="pcMuteBtn" onclick="togglePCMute()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;cursor:pointer;backdrop-filter:blur(8px)">🎤</button>
-      <button id="pcCamBtn" onclick="togglePCCam()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;cursor:pointer;backdrop-filter:blur(8px);display:none">📷</button>
-      <button id="pcFilterBtn" onclick="toggleFilter()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;cursor:pointer;backdrop-filter:blur(8px)">✨</button>
-      <button onclick="endCallKeepChat()" style="width:54px;height:54px;border-radius:50%;background:var(--acc3);border:none;color:#fff;font-size:22px;cursor:pointer">📵</button>
+    <!-- Self video corner -->
+    <video id="pcLocalVideo" autoplay playsinline muted style="position:absolute;top:70px;right:12px;width:88px;height:118px;object-fit:cover;border-radius:14px;border:2px solid rgba(255,255,255,.3);transform:scaleX(-1);display:none;z-index:5"></video>
+    <!-- TOP -->
+    <div style="position:absolute;top:0;left:0;right:0;padding:12px 16px;background:linear-gradient(to bottom,rgba(0,0,0,.75),transparent);display:flex;align-items:center;gap:10px;z-index:10">
+      <button onclick="endCallKeepChat()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div style="flex:1">
+        <div id="pcCallNameTop" style="font-weight:700;font-size:15px;color:#fff">Friend</div>
+        <div id="pcCallTimer" style="font-size:11px;color:rgba(255,255,255,.6)">Connecting...</div>
+      </div>
+    </div>
+    <!-- FLOATING CHAT MESSAGES over video -->
+    <div id="pcFloatChat" style="position:absolute;bottom:130px;left:0;right:0;max-height:200px;overflow-y:auto;padding:0 12px;display:flex;flex-direction:column;gap:5px;z-index:10"></div>
+    <!-- CONTROLS -->
+    <div style="position:absolute;bottom:50px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:16px;z-index:10">
+      <button id="pcMuteBtn" onclick="togglePCMute()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+      <button id="pcCamBtn" onclick="togglePCCam()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+      <button id="pcFilterBtn" onclick="toggleFilter()" style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;cursor:pointer;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+      <button onclick="endCallKeepChat()" style="width:58px;height:58px;border-radius:50%;background:var(--acc3);border:none;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(255,79,123,.4);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.25 7.76 15.57 6.06 13.87A19.79 19.79 0 0 1 3 5.22 2 2 0 0 1 4.99 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.97 10.9"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
+    </div>
+    <!-- FLOATING INPUT -->
+    <div style="position:absolute;bottom:0;left:0;right:0;padding:6px 12px;background:rgba(0,0,0,.6);backdrop-filter:blur(15px);z-index:10;display:flex;align-items:center;gap:8px">
+      <button onclick="toggleCallChatInput()" style="background:none;border:none;cursor:pointer;padding:4px;color:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+      <input id="pcCallInp" placeholder="Message during call..." style="flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:8px 14px;font-size:13px;outline:none;font-family:inherit;display:none" onkeydown="if(event.key==='Enter')sendPCCallMsg()">
+      <button onclick="sendPCCallMsg()" id="pcCallSendBtn" style="width:34px;height:34px;background:var(--acc);border:none;border-radius:50%;color:#fff;font-size:14px;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0">➤</button>
     </div>
   </div>
 
@@ -620,7 +662,7 @@ button,input,select,textarea{font-family:inherit}
       <!-- Text input -->
       <input id="pcInp" placeholder="Aa" style="flex:1;background:var(--s2);border:1px solid var(--bdr);color:var(--text);border-radius:24px;padding:10px 16px;font-size:14px;outline:none;transition:border .2s;font-family:inherit" onkeydown="if(event.key==='Enter')sendPCMsg()" oninput="this.style.borderColor=this.value?'var(--acc)':'var(--bdr)'">
       <!-- Send button -->
-      <button onclick="sendPCMsg()" style="width:38px;height:38px;background:var(--acc);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;color:#fff;flex-shrink:0;transition:all .2s">➤</button>
+      <button onclick="sendPCMsg()" style="width:38px;height:38px;background:var(--acc);border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;transition:all .2s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
     </div>
   </div>
 
@@ -690,16 +732,16 @@ button,input,select,textarea{font-family:inherit}
     </div>
 
     <div class="ctrlbar">
-      <button class="cb cb-cam" id="camBtn" onclick="toggleCam()">📷</button>
-      <button class="cb cb-mute" id="muteBtn" onclick="toggleMute()">🎤</button>
-      <button class="cb cb-next" onclick="nextStranger()">⏭️</button>
-      <button class="cb cb-msg" onclick="togglePanel()">💬</button>
-      <button class="cb cb-end" onclick="endChat()">📵</button>
+      <button class="cb cb-cam" id="camBtn" onclick="toggleCam()" title="Camera"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg></button>
+      <button class="cb cb-mute" id="muteBtn" onclick="toggleMute()" title="Mute"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></button>
+      <button class="cb cb-next" onclick="nextStranger()" title="Next"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="5 4 15 12 5 20"/><line x1="19" y1="5" x2="19" y2="19"/></svg></button>
+      <button class="cb cb-msg" onclick="togglePanel()" title="Chat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+      <button class="cb cb-end" onclick="endChat()" title="End Call"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07C9.44 17.25 7.76 15.57 6.06 13.87A19.79 19.79 0 0 1 3 5.22 2 2 0 0 1 4.99 3h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.97 10.9"/><line x1="23" y1="1" x2="1" y2="23"/></svg></button>
     </div>
     <div class="ctrlbar-right">
-      <button class="cb cb-flip" onclick="flipCamera()" title="Flip Camera" style="width:40px;height:40px;font-size:16px">🔄</button>
-      <button class="cb cb-filter" id="filterBtn" onclick="toggleFilter()" title="Video Filter" style="width:40px;height:40px;font-size:16px">✨</button>
-      <button class="cb cb-add" onclick="sendFriendReq()" title="Add Friend" style="width:40px;height:40px;font-size:16px">👤</button>
+      <button class="cb cb-flip" onclick="flipCamera()" title="Flip" style="width:40px;height:40px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 4v6h6"/><path d="M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg></button>
+      <button class="cb cb-filter" id="filterBtn" onclick="toggleFilter()" title="Filter" style="width:40px;height:40px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></button>
+      <button class="cb cb-add" id="addFriendBtn" onclick="sendFriendReq()" title="Add Friend" style="width:40px;height:40px"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>
     </div>
   </div>
 
@@ -736,7 +778,7 @@ button,input,select,textarea{font-family:inherit}
       <button class="emojibtn" onclick="toggleEP('ep1')">😊</button>
       <label class="emojibtn" title="Send Image" style="cursor:pointer">📎<input type="file" accept="image/*" style="display:none" onchange="sendImage(this,'cpMsgs')"></label>
       <input class="cinp" id="cpInp" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendVM()">
-      <button class="sendbtn" onclick="sendVM()">➤</button>
+      <button class="sendbtn" onclick="sendVM()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
     </div>
   </div>
 </div>
@@ -1016,6 +1058,14 @@ function applyUserUI(p){
   document.getElementById('pNmBig').textContent=p.name;
   document.getElementById('pSubBig').textContent=(ctry[p.country]||'🌍')+' • '+(p.gender==='male'?'👦 Male':p.gender==='female'?'👧 Female':'🌈 Other');
   if(p.age) document.getElementById('pAgeBig').textContent=p.age;
+}
+
+function goHome(){
+  go('homeScreen');
+  loadRecentChats();
+  // Update nav active state
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('on'));
+  document.getElementById('navHome')?.classList.add('on');
 }
 
 function logout(){
@@ -1414,9 +1464,23 @@ function sendFriendReq(){
   if(!S.roomId){toast('Connect to someone first!');return;}
   const nm=document.getElementById('chNm')?.textContent||'Stranger';
   socket.emit('friend_request',{roomId:S.roomId,fromName:S.user?.name||'Anonymous'});
-  toast('👤 Friend request sent to '+nm+'!');
-  document.getElementById('friendReqSent').style.display='block';
-  setTimeout(()=>{document.getElementById('friendReqSent').style.display='none';},3000);
+  
+  // Change button to show pending state
+  const btn=document.getElementById('addFriendBtn');
+  if(btn){
+    btn.textContent='⏳';
+    btn.style.background='rgba(255,184,0,.3)';
+    btn.onclick=null; // Disable double click
+    setTimeout(()=>{
+      btn.textContent='👤+';
+      btn.style.background='';
+      btn.onclick=sendFriendReq;
+    },5000);
+  }
+  
+  const reqEl=document.getElementById('friendReqSent');
+  if(reqEl){reqEl.style.display='block';setTimeout(()=>reqEl.style.display='none',3000);}
+  toast('👤 Request sent to '+nm+'! Waiting...');
 }
 
 function showFriendModal(fromName){
@@ -1444,10 +1508,9 @@ function acceptFriend(name){
   document.getElementById('frModal')?.remove();
   const myName = S.user?.name || 'Anonymous';
   socket.emit('friend_accepted',{roomId:S.roomId,toName:name,fromName:myName});
-  addToRecent(name, 'New friend! 🤝', false);
-  toast('🎉 '+name+' added as friend!');
-  // Auto open chat
-  setTimeout(()=>openFriendChat(name), 800);
+  addToRecent(name, '🤝 Became friends!', false);
+  toast('🎉 '+name+' added! Go to Friends tab to chat.');
+  // NO auto call or chat - just notify
 }
 
 // ── Send Image ──────────────────────────────────────────
@@ -1577,12 +1640,37 @@ async function setupPrivateCall(init, roomId, withVideo=true){
   
   pcPc.ontrack = e => {
     remoteStream.addTrack(e.track);
+    console.log('PC ontrack:', e.track.kind);
+    
     if(e.track.kind === 'video'){
       rv.style.display = 'block';
       document.getElementById('pcVidPh').style.display = 'none';
       rv.play().catch(()=>{setTimeout(()=>rv.play().catch(()=>{}),500);});
-      toast('🟢 Private call connected!');
     }
+    
+    e.track.onunmute = ()=>{
+      if(e.track.kind==='video'){
+        rv.style.display='block';
+        document.getElementById('pcVidPh').style.display='none';
+        rv.play().catch(()=>{});
+        document.getElementById('pcConnTxt').textContent='Connected!';
+        document.getElementById('pcCallTimer').textContent='00:00';
+        toast('🟢 Connected!');
+      } else {
+        document.getElementById('pcConnTxt').textContent='Audio connected!';
+      }
+    };
+  };
+  
+  pcPc.oniceconnectionstatechange = ()=>{
+    const st = pcPc.iceConnectionState;
+    console.log('PC ICE:', st);
+    if(st==='connected'||st==='completed'){
+      document.getElementById('pcConnTxt').textContent='Connected!';
+      const rv=document.getElementById('pcRemoteVideo');
+      if(rv.srcObject) rv.play().catch(()=>{});
+    }
+    if(st==='failed') toast('❌ Call connection failed');
   };
   
   pcPc.onicecandidate = e => {
@@ -1675,6 +1763,7 @@ function cleanupChat(){
 
 // End call but stay in chat
 function endCallKeepChat(){
+  if(pcCallTimerInt){clearInterval(pcCallTimerInt);pcCallTimerInt=null;}
   if(pcPc){ pcPc.close(); pcPc = null; }
   if(pcStream){ pcStream.getTracks().forEach(t=>t.stop()); pcStream = null; }
   const rv=document.getElementById('pcRemoteVideo');
@@ -1683,13 +1772,16 @@ function endCallKeepChat(){
   if(lv){lv.srcObject=null;lv.style.display='none';}
   const ph=document.getElementById('pcVidPh');
   if(ph)ph.style.display='flex';
-  // Hide call area, show chat
+  // HIDE fullscreen call, go back to chat
   const ca=document.getElementById('pcCallArea');
-  if(ca){ca.style.display='none';ca.style.height='';}
+  if(ca) ca.style.display='none';
   pcRoomId=null;
-  // Stay in private chat screen
-  addMsg('pcMsgs','📵 Call ended','me');
+  // Add ended message to chat
+  const dur=document.getElementById('pcCallTimer')?.textContent||'';
+  addMsg('pcMsgs','📵 Call ended'+(dur&&dur!=='Calling...'?' ('+dur+')':''),'me');
   toast('Call ended');
+  // Make sure we are on private chat screen
+  go('privateChatScreen');
 }
 
 function endPrivateCall(){
@@ -1699,30 +1791,48 @@ function endPrivateCall(){
 }
 
 // Start quick call from chat header
+let pcCallTimerInt = null;
+let pcCallSec = 0;
+
 function startQuickCall(callType){
   const name = activeFriendChat;
   if(!name){toast('No friend selected');return;}
   
-  // Show call area
+  // Show FULLSCREEN call area
   const ca=document.getElementById('pcCallArea');
   ca.style.display='flex';
-  ca.style.height='220px';
-  ca.style.flexDirection='column';
   
-  const callAvt=document.getElementById('pcCallAvt');
-  if(callAvt) callAvt.textContent=name[0].toUpperCase();
-  const callNm=document.getElementById('pcCallName');
-  if(callNm) callNm.textContent=name;
-  
-  // Show cam button for video
+  // Set names
+  const els=['pcCallAvt','pcCallNameTop','pcCallName'];
+  els.forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent = id==='pcCallAvt' ? name[0].toUpperCase() : name;
+  });
+
+  // Video call: show camera button, hide audio viz
   const camBtn=document.getElementById('pcCamBtn');
   if(camBtn) camBtn.style.display=callType==='video'?'flex':'none';
   
-  // Show audio viz for audio only
   const viz=document.getElementById('pcAudioViz');
   if(viz) viz.style.display=callType==='audio'?'flex':'none';
   
+  // Audio call: keep background, hide video placeholder avatar for now
+  const ph=document.getElementById('pcVidPh');
+  if(ph) ph.style.display='flex'; // always show placeholder until connected
+  
   document.getElementById('pcConnTxt').textContent='Calling '+name+'...';
+  document.getElementById('pcCallTimer').textContent='Calling...';
+  
+  // Start call timer
+  pcCallSec=0;
+  if(pcCallTimerInt) clearInterval(pcCallTimerInt);
+  pcCallTimerInt=setInterval(()=>{
+    pcCallSec++;
+    const m=String(Math.floor(pcCallSec/60)).padStart(2,'0');
+    const s=String(pcCallSec%60).padStart(2,'0');
+    const el=document.getElementById('pcCallTimer');
+    if(el) el.textContent=m+':'+s;
+  },1000);
   
   const roomId='pc_'+socket.id.substr(0,8)+'_'+Date.now();
   socket.emit('private_call_request',{
@@ -1731,7 +1841,45 @@ function startQuickCall(callType){
     roomId,
     callType
   });
+  // Video=true camera, Audio=false camera
   setupPrivateCall(true, roomId, callType==='video');
+}
+
+function toggleCallChatInput(){
+  const inp=document.getElementById('pcCallInp');
+  const sendBtn=document.getElementById('pcCallSendBtn');
+  const visible=inp.style.display!=='none'&&inp.style.display!=='';
+  if(visible){
+    inp.style.display='none';
+    if(sendBtn) sendBtn.style.display='none';
+  } else {
+    inp.style.display='block';
+    if(sendBtn) sendBtn.style.display='flex';
+    inp.focus();
+  }
+}
+
+function sendPCCallMsg(){
+  const inp=document.getElementById('pcCallInp');
+  const t=inp.value.trim(); if(!t) return;
+  // Show in floating chat
+  const fc=document.getElementById('pcFloatChat');
+  if(fc){
+    const d=document.createElement('div');
+    d.className='msg me';
+    d.textContent=t;
+    d.style.cssText='background:rgba(108,71,255,.8);color:#fff;align-self:flex-end;backdrop-filter:blur(8px);pointer-events:none;margin-bottom:2px';
+    fc.appendChild(d);
+    fc.scrollTop=fc.scrollHeight;
+  }
+  // Also show in main chat
+  addMsg('pcMsgs',t,'me');
+  socket.emit('pc_message',{roomId:pcRoomId,text:t,fromName:S.user?.name});
+  if(activeFriendChat){
+    saveMsgToHistory(activeFriendChat,t,'me');
+    addToRecent(activeFriendChat,'You: '+t,true);
+  }
+  inp.value='';
 }
 
 function togglePCCam(){
@@ -1955,7 +2103,16 @@ socket.on('friend_request', d=>{
 });
 
 socket.on('friend_accepted', d=>{
-  toast('🎉 '+d.fromName+' accepted your friend request!');
+  const name = d.fromName;
+  if(name && !myFriends.includes(name)){
+    myFriends.push(name);
+    localStorage.setItem('cn_friends',JSON.stringify(myFriends));
+  }
+  addToRecent(name||'Friend','🤝 Became friends!',false);
+  toast('🎉 '+name+' accepted your friend request!');
+  // Change add friend button to "Friends" checkmark
+  const btn=document.getElementById('addFriendBtn');
+  if(btn){btn.textContent='✅';btn.style.background='rgba(0,229,160,.3)';btn.onclick=()=>openFriendChat(name);}
 });
 
 // ── Image Message Socket ────────────────────────────────
@@ -1995,23 +2152,37 @@ async function acceptIncomingCall(fromName, roomId, callType='video'){
   document.getElementById('inCallModal')?.remove();
   activeFriendChat = fromName;
   
-  // Open chat
+  // Open chat first
   openFriendChat(fromName);
   
-  // Show call area
+  // Show FULLSCREEN call area
   const ca=document.getElementById('pcCallArea');
   ca.style.display='flex';
-  ca.style.height='220px';
-  ca.style.flexDirection='column';
   
-  const callAvt=document.getElementById('pcCallAvt');
-  if(callAvt) callAvt.textContent=fromName[0].toUpperCase();
+  // Set names
+  ['pcCallAvt','pcCallNameTop','pcCallName'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent = id==='pcCallAvt' ? fromName[0].toUpperCase() : fromName;
+  });
+  
   document.getElementById('pcConnTxt').textContent='Connecting...';
+  document.getElementById('pcCallTimer').textContent='Connecting...';
   
   const viz=document.getElementById('pcAudioViz');
   if(viz) viz.style.display=callType==='audio'?'flex':'none';
   const camBtn=document.getElementById('pcCamBtn');
   if(camBtn) camBtn.style.display=callType==='video'?'flex':'none';
+  
+  // Start timer
+  pcCallSec=0;
+  if(pcCallTimerInt) clearInterval(pcCallTimerInt);
+  pcCallTimerInt=setInterval(()=>{
+    pcCallSec++;
+    const m=String(Math.floor(pcCallSec/60)).padStart(2,'0');
+    const s=String(pcCallSec%60).padStart(2,'0');
+    const el=document.getElementById('pcCallTimer');
+    if(el) el.textContent=m+':'+s;
+  },1000);
   
   socket.emit('private_call_accepted',{roomId,fromName:S.user?.name});
   await setupPrivateCall(false, roomId, callType==='video');
@@ -2043,6 +2214,19 @@ socket.on('pc_ice', async d => {
 
 socket.on('pc_message', d => {
   addMsg('pcMsgs', d.text, 'them');
+  // Also show in floating chat if call is active
+  const ca=document.getElementById('pcCallArea');
+  if(ca && ca.style.display!=='none'){
+    const fc=document.getElementById('pcFloatChat');
+    if(fc){
+      const div=document.createElement('div');
+      div.className='msg them';
+      div.textContent=d.text;
+      div.style.cssText='background:rgba(30,30,50,.85);backdrop-filter:blur(8px);pointer-events:none;margin-bottom:2px';
+      fc.appendChild(div);
+      fc.scrollTop=fc.scrollHeight;
+    }
+  }
   if(d.fromName){
     saveMsgToHistory(d.fromName, d.text, 'them');
     addToRecent(d.fromName, d.text, activeFriendChat===d.fromName);
